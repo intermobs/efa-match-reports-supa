@@ -1,6 +1,6 @@
-import { X, Eye, Edit2, Printer, ClipboardList, FileText, ShieldAlert } from 'lucide-react';
+import { X, Eye, Edit2, ClipboardList, FileText, ShieldAlert } from 'lucide-react';
 
-export default function MatchActionsModal({ match, onClose, onEdit, onView, onPrint }: any) {
+export default function MatchActionsModal({ match, onClose, onEdit, onView }: any) {
   const forms = [
     { id: 'm1', label: 'Matchday-1 Form', path: '/match-day-minus1', icon: <ClipboardList size={18}/> },
     { id: 'day', label: 'Matchday Form', path: '/match-day', icon: <FileText size={18}/> },
@@ -15,7 +15,7 @@ export default function MatchActionsModal({ match, onClose, onEdit, onView, onPr
             <h3 className="font-bold text-lg text-gray-900">Available Forms</h3>
             <p className="text-xs text-gray-500">{match.homeTeam} vs {match.awayTeam}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full"><X size={20}/></button>
+          <button onClick={onClose} className="p-2 text-red-600 hover:!bg-red-100 rounded-full"><X size={20}/></button>
         </div>
 
         <div className="space-y-4">
@@ -27,8 +27,7 @@ export default function MatchActionsModal({ match, onClose, onEdit, onView, onPr
               </div>
               <div className="flex gap-1">
                 <button onClick={() => onView(match, f.id, f.label)} className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"><Eye size={16} /></button>
-                <button onClick={() => onEdit(match, f.path)} className="p-1.5 hover:bg-indigo-100 text-indigo-600 rounded"><Edit2 size={16} /></button>
-                <button onClick={onPrint} className="p-1.5 hover:bg-gray-200 text-gray-600 rounded"><Printer size={16} /></button>
+                <button onClick={() => onEdit(match, f.path)} className="p-1.5 hover:bg-indigo-100 text-indigo-600 rounded"><Edit2 size={16} /></button>             
               </div>
             </div>
           ))}
