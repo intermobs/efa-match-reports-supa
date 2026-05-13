@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Select from 'react-select';
-import { db } from '../lib/supabase';
+//import { db } from '../lib/supabase';
 import { ShieldAlert, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase'; // Use Supabase
 
