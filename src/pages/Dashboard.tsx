@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Plus, X, Trophy, Users, Printer, Clock } from 'lucide-react';
+import { ShieldAlert, Plus, X, Trophy, Users, Printer, Clock, Trash2 } from 'lucide-react';
 import { db, getCurrentUser, supabase } from '../lib/supabase';
 import Select from 'react-select';
 import MatchActionsModal from '../components/MatchActionsModal'; // Ensure this exists
@@ -12,7 +12,6 @@ type NotificationItem = {
   time: string;
   read?: boolean;
 };
-
 
 const TEAMS = [
   { value: 'Mbabane Swallows', label: 'Mbabane Swallows' },
@@ -313,14 +312,11 @@ export default function Dashboard() {
     };
   }, [currentUser, isAdmin]);
 
-  //const startReport = (match: any, path: string) => navigate(path, { state: { matchData: match } });
-
   const filteredMatches = matches
     .filter(m => (m.homeTeam + " " + m.awayTeam).toLowerCase().includes(search.toLowerCase()))
     .sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
   const paginatedMatches = filteredMatches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   return (
     <div className="w-screen min-h-screen !bg-gray-50 flex flex-col">
       <DashboardHeader
@@ -343,10 +339,8 @@ export default function Dashboard() {
           </div>
         )}
         {!isAdmin && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-12">
-            <StatCard title="Active Matches" value={matches.filter((m: any) => m.status === 'Active').length} icon={<ShieldAlert className="text-green-600" />} />
-            <StatCard title="Completed" value={matches.length} icon={<Trophy className="text-blue-600" />} />
-            
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <StatCard title="Assigned Matches" value={matches.filter((m: any) => m.status === 'M-1 Pending').length} icon={<Clock className="text-orange-300" />} />     
           </div>
         )}
         <div className="!bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -406,13 +400,8 @@ export default function Dashboard() {
                           Incident
                         </span>
                       )}
-                    </div>
-                    <div>  </div>
-                    
-
-                    
+                    </div><div> </div>           
                   </div>
-
                 </div>
               ))}
             </div>
@@ -421,7 +410,7 @@ export default function Dashboard() {
         </div>
         </div>
 
-      {isAdmin ? selectedMatch && <AdminDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} /> : selectedMatch && (
+      {isAdmin ? selectedMatch && <AdminDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} onDelete={() => fetchMatches(userProfile, currentUser)} /> : selectedMatch && (
           <MatchActionsModal 
             match={selectedMatch} 
             onClose={() => setSelectedMatch(null)} 
@@ -479,11 +468,11 @@ function StatCard({ title, value, icon }: any) {
   );
 }
 
-function AdminDetailModal({ match, onClose }: { match: any, onClose: () => void }) {
+function AdminDetailModal({ match, onClose, onDelete }: { match: any, onClose: () => void, onDelete?: () => void }) {
   const [selectedTab, setSelectedTab] = useState<'details' | 'm1' | 'day' | 'incident'>('details');
   const [reportData, setReportData] = useState<any>(null);
   const [availableReports, setAvailableReports] = useState<{[key: string]: boolean}>({});
-
+  const [isDeleting, setIsDeleting] = useState(false);
   // Helper to make the keys look like proper labels
   const formatLabel = (key: string) => {
     return key
@@ -567,6 +556,39 @@ function AdminDetailModal({ match, onClose }: { match: any, onClose: () => void 
     fetchReportData();
   }, [selectedTab, match.id]);
 
+  const handleDeleteMatch = async () => {
+    if (!confirm(`Are you sure you want to delete this match: ${match.homeTeam} vs ${match.awayTeam}? This will also delete all related reports and cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Delete related reports first
+
+      // Delete from m1_reports
+      await db.from('m1_reports').delete().eq('id', `M1-${match.id}`);
+
+      // Delete from matchday_reports
+      await db.from('matchday_reports').delete().eq('id', `MD-${match.id}`);
+
+      // Delete from incident_reports
+      await db.from('incident_reports').delete().eq('id', `IR-${match.id}`);
+
+      // Delete the match itself
+      const { error } = await db.from('matches').delete().eq('id', match.id);
+      if (error) throw error;
+
+      alert('Match and all related data deleted successfully.');
+      onClose();
+      if (onDelete) onDelete();
+    } catch (error) {
+      console.error('Error deleting match:', error);
+      alert('Error deleting match. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Filter out technical fields for match details
   const displayData = Object.entries(match).filter(
     ([key]) => !['id', 'userId', 'createdAt', 'status', 'officerEmail', 'assignedUserId', 'officerEmail'].includes(key)
@@ -628,7 +650,6 @@ function AdminDetailModal({ match, onClose }: { match: any, onClose: () => void 
                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mt-2">
                   {selectedTab === 'details' ? 'Match Overview' : selectedTab === 'm1' ? 'MATCH DAY -1 REPORT' : selectedTab === 'day' ? 'MATCH DAY REPORT' : 'INCIDENT REPORT'}
                 </h3>
-                
               </div>
               <img src="/efa_logo.png" alt="EFA Logo" className="w-20 h-20 object-contain self-end" />
             </div>
@@ -638,7 +659,6 @@ function AdminDetailModal({ match, onClose }: { match: any, onClose: () => void 
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Match</p>
                 <p className="text-lg font-semibold text-slate-900">{match.homeTeam || 'N/A'} vs {match.awayTeam || 'N/A'}</p>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2"></p>
-                
                 <div className="grid grid-cols-2 gap-3 text-sm text-slate-700">
                   <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">Tournament</p>
@@ -664,7 +684,6 @@ function AdminDetailModal({ match, onClose }: { match: any, onClose: () => void 
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">Date</p>
                     <p className="font-medium text-slate-900 mt-1">{match.date || 'N/A'}</p>
                   </div>
-
                   <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">Safety & Security Officer</p>
                     <p className="font-medium text-slate-900 mt-1">{match.assignedOfficerName || match.assignedOfficer || 'N/A'}</p>
@@ -705,15 +724,25 @@ function AdminDetailModal({ match, onClose }: { match: any, onClose: () => void 
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t mt-auto flex justify-end gap-3 bg-gray-50">
-          <button onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">Close</button>
+        <div className="p-6 border-t mt-auto flex justify-between items-center bg-gray-50">
           <button 
-            onClick={() => window.print()} 
-            disabled={!reportData && selectedTab !== 'details'}
-            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            onClick={handleDeleteMatch}
+            disabled={isDeleting}
+            className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:bg-red-400 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <Printer size={18} /> Print {selectedTab === 'details' ? 'Details' : 'Report'}
+            <Trash2 size={18} />
+            {isDeleting ? 'Deleting...' : 'Delete Match'}
           </button>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">Close</button>
+            <button 
+              onClick={() => window.print()} 
+              disabled={!reportData && selectedTab !== 'details'}
+              className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              <Printer size={18} /> Print {selectedTab === 'details' ? 'Details' : 'Report'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
