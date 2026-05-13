@@ -135,13 +135,6 @@ export default function IncidentReport() {
         imageUrl = uploadData.path;
       }
 
-      const { data: profileData } = await db
-        .from('users')
-        .select('full_name')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      const officerName = profileData?.full_name || user.email;
 
       // 3. Save to 'incident_reports' table
       const { error: reportError } = await supabase
@@ -150,7 +143,6 @@ export default function IncidentReport() {
           id: `IR-${match.id}`,
           match_id: match.id,
           officer_email: user.email,
-          officer_name: officerName,
           match_date: data.matchDate,
           match_no: data.matchNo,
           kick_off: data.kickOff,
