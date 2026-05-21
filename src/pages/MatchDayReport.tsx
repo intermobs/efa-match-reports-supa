@@ -1,32 +1,8 @@
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Select from 'react-select';
-import { supabase } from '../lib/supabase'; // Your new Supabase client
-
-
-// Data Options
-const TEAMS = [
-  { value: 'Mbabane Swallows', label: 'Mbabane Swallows' },
-  { value: 'Mbabane Highlanders', label: 'Mbabane Highlanders' },
-  { value: 'Manzini Wanderers', label: 'Manzini Wanderers' },
-  { value: 'Moneni Pirates', label: 'Moneni Pirates' },
-  { value: 'Green Mamba', label: 'Green Mamba' }
-];
-const LEAGUES = [
-  { value: 'Premier League', label: 'PLE' },
-  { value: 'Super League', label: 'Super League' },
-  { value: 'Regional League', label: 'Regional League' },
-  { value: 'NFD', label: 'NFD' }
-];
-const VENUES = [
-  { value: 'hhohho', label: 'Hhohho' },
-  { value: 'lubombo', label: 'Lubombo' },
-  { value: 'manzini', label: 'Manzini' },
-  { value: 'shiselweni', label: 'Shiselweni' }
-];
-const STADIUMS = [{ value: 'Somhlolo National Stadium', label: 'Somhlolo National Stadium' }, { value: 'Mavuso Sports Centre', label: 'Mavuso Sports Centre' }];
+import { supabase } from '../lib/supabase'; // Supabase client
 
 const schema = z.object({
   tournament: z.string().min(1, 'Required'),
@@ -60,9 +36,7 @@ export default function MatchDayReport() {
   const location = useLocation();
   const navigate = useNavigate();
   const { matchData: match } = location.state || {}; // Extract match data
-
-
-  const { register, handleSubmit, control, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       officerName: match?.assignedOfficerName || 'Unassigned',
@@ -139,97 +113,117 @@ export default function MatchDayReport() {
 
   return (
     <div className="w-screen min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      {/* Main Match Day -1 Report Card */}
-      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-xl border border-blue-100 overflow-hidden">
-        <div className="bg-blue-900 py-8 px-10 text-white text-center rounded-t-2xl">
-          <h1 className="text-3xl font-bold">MATCH DAY REPORT</h1>
-        </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="p-8 md:p-12 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input 
-              label="Tournament" 
-              {...register('tournament')} 
-              disabled={!!match}
-              error={errors.tournament} 
-            />
-            <Input label="Officer Name" {...register('officerName')} disabled={!!match} error={errors.officerName} />
-            <Input label="Date" type="date" {...register('date')} disabled={!!match} error={errors.date} />
-            <SearchableDropdown label="League" name="league" control={control} options={LEAGUES} error={errors.league} disabled={!!match} />
-            <SearchableDropdown label="Home Team" name="homeTeam" control={control} options={TEAMS} error={errors.homeTeam} disabled={!!match} />
-            <SearchableDropdown label="Away Team" name="awayTeam" control={control} options={TEAMS} error={errors.awayTeam} disabled={!!match} />
-            <Input label="Home Score" type="number" {...register('homeScore', { valueAsNumber: true })} error={errors.homeScore} />
-            <Input label="Away Score" type="number" {...register('awayScore', { valueAsNumber: true })} error={errors.awayScore} />
-            <SearchableDropdown label="Venue" name="venue" control={control} options={VENUES} error={errors.venue} disabled={!!match} />
-            <SearchableDropdown label="Stadium" name="stadium" control={control} options={STADIUMS} error={errors.stadium} disabled={!!match} />
-            <Input label="Actual Stadium Attendance" type="number" {...register('attendance', { valueAsNumber: true })} error={errors.attendance} />
-          </div>
-          <div className="space-y-6 mt-8">
-            {[
-              { label: 'How was the access control operation during the match day? Explain briefly.', field: 'accessControl' },
-              { label: 'Were staircases and gangways clear of spectators? Explain briefly.', field: 'staircases' },
-              { label: 'How was the general behavior of the supporters? Explain briefly.', field: 'supporterBehavior' },
-              { label: 'How was the behaviour of team officials? Explain briefly.', field: 'officialBehavior' },
-              { label: 'How was the interaction with the venue operation centre (VOC)? Explain briefly.', field: 'vocInteraction' },
-              { label: 'Were the stadium surroundings clean? Explain briefly.', field: 'stadiumCleanliness' },
-              { label: 'How was the general security debriefing? Explain briefly.', field: 'securityDebrief' },
-              { label: 'How was the cooperation and teamwork with the organizing committee? Explain briefly.', field: 'locCooperation' },
-              { label: 'How was the cooperation and teamwork with the stadium authority? Explain briefly.', field: 'stadiumAuthority' },
-              { label: 'How was the cooperation and teamwork with the PLE office? Explain briefly.', field: 'pleDelegation' },
-              { label: 'What is your overall evaluation? Explain briefly.', field: 'overallEvaluation' },
-              { label: 'If the were any issues/concerns, please provide a description and evaluation of the resolution for each of the issues.', field: 'issuesDescription' },
-            ].map((item) => (
-              <TextArea 
-                key={item.field}
-                label={item.label} 
-                {...register(item.field as any)} 
-                error={errors[item.field as keyof FormData]} 
-              />
-            ))}
-            
-          </div>
-          <div className="flex gap-4 justify-end pt-6">
-           
-            <button type="button" className="px-8 py-3 !bg-gray-600 text-white rounded-xl hover:!bg-gray-700">Save Draft</button>
-            <button type="submit" disabled={isSubmitting} className="px-10 py-3 !bg-green-600 text-white rounded-xl hover:!bg-green-700">{isSubmitting ? 'Submitting...' : 'Submit Report'}</button>
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+          <div className="bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-700 px-8 py-10 sm:px-12">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.24em] text-sky-100">Match Day Report</p>
+               
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <span className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm text-white">Match ID: {match?.id ?? 'N/A'}</span>
+                <span className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm text-white">Status: {match ? 'In progress' : 'Draft'}</span>
+              </div>
+            </div>
           </div>
 
-        </form>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
+            <section className=" border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-slate-900">Match Details</h2>
+                <div className="mt-6 space-y-4 grid gap-4 md:grid-cols-2">
+                  <SummaryBadge label="Venue" value={match?.venue || 'Unknown'} />
+                  <SummaryBadge label="Assigned officer" value={match?.assignedOfficerName || 'Unassigned'} />
+                  <SummaryBadge label="Tournament" value={match?.tournament || 'Unknown'} />
+                  <SummaryBadge label="League" value={match?.league || 'Unknown'} />
+                  <SummaryBadge label="Stadium" value={match?.stadium || 'Unknown'} />
+                  <SummaryBadge label="Home Team" value={match?.homeTeam || 'Unknown'} />
+                  <SummaryBadge label="Away Team" value={match?.awayTeam || 'Unknown'} />
+                  <SummaryBadge label="Date" value={match?.date || 'Unknown'} />
+                </div>    
+            </section>
+
+            <section className="grid gap-6 lg:grid-cols-[1fr_280px]">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">Score & attendance</h2>
+                  <p className="mt-1 text-sm text-slate-500">Capture the final score and actual attendance.</p>
+                </div>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <Input label="Home Score" type="number" {...register('homeScore', { valueAsNumber: true })} error={errors.homeScore} />
+                  <Input label="Away Score" type="number" {...register('awayScore', { valueAsNumber: true })} error={errors.awayScore} />
+                  <Input label="Attendance" type="number" {...register('attendance', { valueAsNumber: true })} error={errors.attendance} />
+                </div>
+              </div>
+            </section>
+
+            <section className="grid gap-6">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                <h2 className="text-xl font-semibold text-slate-900">Operational observations</h2>
+                <p className="mt-1 text-sm text-slate-500">Provide a concise evaluation for each key area below.</p>
+                <div className="mt-6 space-y-5">
+                  {[
+                    { label: 'Access control operation', field: 'accessControl' },
+                    { label: 'Staircases and gangways', field: 'staircases' },
+                    { label: 'Supporter behaviour', field: 'supporterBehavior' },
+                    { label: 'Team official behaviour', field: 'officialBehavior' },
+                    { label: 'VOC interaction', field: 'vocInteraction' },
+                    { label: 'Stadium cleanliness', field: 'stadiumCleanliness' },
+                    { label: 'Security debrief', field: 'securityDebrief' },
+                    { label: 'LOC cooperation', field: 'locCooperation' },
+                    { label: 'Stadium authority cooperation', field: 'stadiumAuthority' },
+                    { label: 'PLE delegation cooperation', field: 'pleDelegation' },
+                  ].map((item) => (
+                    <TextArea className="bg-white"
+                      key={item.field}
+                      label={item.label}
+                      {...register(item.field as any)}
+                      error={errors[item.field as keyof FormData]}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+                <h2 className="text-xl font-semibold text-slate-900">Final evaluation</h2>
+                <p className="mt-1 text-sm text-slate-500">Summarise any issues and provide your overall assessment.</p>
+                <div className="mt-6 space-y-5">
+                  <TextArea label="Overall evaluation" {...register('overallEvaluation')} error={errors.overallEvaluation} />
+                  <TextArea label="Issues or concerns" {...register('issuesDescription')} error={errors.issuesDescription} />
+                </div>
+              </div>
+            </section>
+
+            <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-end">
+              <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">Save draft</button>
+              <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-2xl bg-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-400">{isSubmitting ? 'Submitting...' : 'Submit report'}</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-// Helpers
-function SearchableDropdown({ label, name, control, options, error, disabled }: any) {
+
+function SummaryBadge({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <Controller name={name} control={control} render={({ field }) => (
-        <Select {...field} options={options} menuPortalTarget={document.body} isDisabled={disabled}
-          onChange={(v: any) => field.onChange(v.value)} 
-          value={options.find((o: any) => o.value === field.value)} 
-          styles={{ 
-            control: (base) => ({ ...base, borderColor: error ? '#dc2626' : '#d1d5db' }),
-            option: (base) => ({ ...base, color: 'black' }), singleValue: (base) => ({ ...base, color: 'black' }) 
-          }} 
-        />
-      )} />
-      {error && <p className="text-red-600 text-xs mt-1">{error.message}</p>}
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-medium text-slate-900">{value}</p>
     </div>
   );
 }
-// Fixed Components with Red Error borders
 
 function TextArea({ label, error, ...props }: any) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-      <textarea 
-        {...props} 
-        rows={3} 
-        className={`w-full px-4 py-3 border rounded-lg text-black focus:ring-2 outline-none transition duration-200 
-        ${error ? 'border-red-600 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}`} 
+      <label className="block text-sm font-medium text-slate-700 mb-2">{label}</label>
+      <textarea
+        {...props}
+        rows={4}
+        className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition duration-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 ${error ? 'border-red-500 ring-red-100 focus:border-red-500 focus:ring-red-100' : 'border-slate-200'}`}
       />
-      {error && <p className="text-red-600 text-xs mt-1">{error.message}</p>}
+      {error && <p className="mt-2 text-xs text-red-600">{error.message}</p>}
     </div>
   );
 }
@@ -237,9 +231,12 @@ function TextArea({ label, error, ...props }: any) {
 function Input({ label, error, ...props }: any) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input {...props} className={`w-full px-4 py-3 border rounded-lg text-black ${error ? 'border-red-600' : 'border-gray-300'}`} />
-      {error && <p className="text-red-600 text-xs mt-1">{error.message}</p>}
+      <label className="block text-sm font-medium text-slate-700 mb-2">{label}</label>
+      <input
+        {...props}
+        className={`w-full rounded-2xl border bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition duration-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 ${error ? 'border-red-500 ring-red-100 focus:border-red-500 focus:ring-red-100' : 'border-slate-200'}`}
+      />
+      {error && <p className="mt-2 text-xs text-red-600">{error.message}</p>}
     </div>
   );
 }
