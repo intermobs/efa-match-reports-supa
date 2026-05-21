@@ -5,6 +5,7 @@ import { db, getCurrentUser, supabase } from '../lib/supabase';
 import Select from 'react-select';
 import MatchActionsModal from '../components/MatchActionsModal'; // Ensure this exists
 import DashboardHeader from '../components/DashboardHeader';
+import { TOURNAMENTS, LEAGUES, TEAMS, VENUES, STADIUMS } from '../hooks/constants';
 
 type NotificationItem = {
   id: string;
@@ -12,36 +13,6 @@ type NotificationItem = {
   time: string;
   read?: boolean;
 };
-
-const TEAMS = [
-  { value: 'Mbabane Swallows', label: 'Mbabane Swallows' },
-  { value: 'Mbabane Highlanders', label: 'Mbabane Highlanders' },
-  { value: 'Manzini Wanderers', label: 'Manzini Wanderers' },
-  { value: 'Moneni Pirates', label: 'Moneni Pirates' },
-  { value: 'Green Mamba', label: 'Green Mamba' }
-];
-const TOURNAMENTS = [
-  { value: 'MTN Premier League', label: 'MTN Premier League' },
-  { value: 'Mulasport NFD', label: 'Mulasport NFD' },
-  { value: 'Ingwenyama Cup', label: 'SMVA Ingwenyama Cup' }
-];
-const STADIUMS = [
-  { value: 'Somhlolo National Stadium', label: 'Somhlolo National Stadium' },
-  { value: 'KaLanga Sports Ground', label: 'KaLanga Sports Ground' },
-  { value: 'Mavuso Sports Centre', label: 'Mavuso Sports Centre' }
-];
-const LEAGUES = [
-  { value: 'Premier League', label: 'MTN PLE' },
-  { value: 'Super League', label: 'Super League' },
-  { value: 'Regional League', label: 'Regional League' },
-  { value: 'NFD', label: 'Mulasport NFD' }
-];
-const VENUES = [
-  { value: 'hhohho', label: 'Hhohho' },
-  { value: 'lubombo', label: 'Lubombo' },
-  { value: 'manzini', label: 'Manzini' },
-  { value: 'shiselweni', label: 'Shiselweni' }
-];
 
 const selectStyles = {
   control: (base: any) => ({ ...base, padding: '2px', borderColor: '#d1d5db', minHeight: '38px' }),
@@ -441,17 +412,19 @@ function AddMatchForm({ onAdd, officers }: { onAdd: () => void, officers: any[] 
     onAdd();
   };
   return (
-    <div className="p-4 md:p-6 !bg-gray-50 border-b grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      <Select options={TOURNAMENTS} menuPortalTarget={document.body} placeholder="Tournament" styles={selectStyles} onChange={(v:any) => setData({...data, tournament: v.label})} />
-      <Select options={LEAGUES} menuPortalTarget={document.body} placeholder="League" styles={selectStyles} onChange={(v:any) => setData({...data, league: v.label})} />
-      <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Home Team" styles={selectStyles} onChange={(v:any) => setData({...data, homeTeam: v.value})} />
-      <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Away Team" styles={selectStyles} onChange={(v:any) => setData({...data, awayTeam: v.value})} />
-      <input type="date" className="p-2 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setData({...data, date: e.target.value})} />
-      <Select options={VENUES} menuPortalTarget={document.body} placeholder="Venue" styles={selectStyles} onChange={(v:any) => setData({...data, venue: v.value})} />
-      <Select options={STADIUMS} menuPortalTarget={document.body} placeholder="Stadium" styles={selectStyles} onChange={(v:any) => setData({...data, stadium: v.value})} />
-      <Select options={officers} menuPortalTarget={document.body} placeholder="Assign Officer" styles={selectStyles} onChange={(v:any) => setData({...data, assignedUserId: v.value, assignedOfficerName: v.label})} />
-      <button onClick={submit} className="sm:col-span-2 lg:col-span-1 !bg-green-600 text-white font-bold rounded-lg hover:!bg-green-700 transition-colors py-2">Save Match</button>
-    </div>
+  <div className="p-4 md:p-6 !bg-gray-50 border-b grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+    <Select options={TOURNAMENTS} menuPortalTarget={document.body} placeholder="Tournament" styles={selectStyles} onChange={(v: any) => setData({...data, tournament: v.label})} />
+    <Select options={LEAGUES} menuPortalTarget={document.body} placeholder="League" styles={selectStyles} onChange={(v: any) => setData({...data, league: v.label})} />
+    <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Home Team" styles={selectStyles} onChange={(v: any) => setData({...data, homeTeam: v.value})}/>
+    <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Away Team" styles={selectStyles} onChange={(v: any) => setData({...data, awayTeam: v.value})}/>
+    <input type="date" className="p-2 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setData({...data, date: e.target.value})} />
+    <Select options={VENUES} menuPortalTarget={document.body} placeholder="Venue" styles={selectStyles} onChange={(v: any) => setData({...data, venue: v.value})} />
+    <Select options={STADIUMS} menuPortalTarget={document.body} placeholder="Stadium" styles={selectStyles} onChange={(v: any) => setData({...data, stadium: v.value})}  />
+    <Select options={officers} menuPortalTarget={document.body} placeholder="Assign Officer" styles={selectStyles} onChange={(v: any) => setData({...data, assignedUserId: v.value, assignedOfficerName: v.label})} />
+    <button onClick={submit} className="sm:col-span-2 lg:col-span-1 !bg-green-600 text-white font-bold rounded-lg hover:!bg-green-700 transition-colors py-2">
+      Save Match
+    </button>
+  </div>
     
   );
 }
@@ -864,7 +837,6 @@ function ReportViewer({ data, onClose, title, match }: any) {
               <h3 className="text-2xl font-bold text-slate-900 mt-2">{headerTitle}</h3>
             </div>
             <img src="/efa_logo.png" alt="EFA Logo" className="w-20 h-20 object-contain self-end" />
-          
           </div>
 
           {/* Match Metadata Top Section */}
