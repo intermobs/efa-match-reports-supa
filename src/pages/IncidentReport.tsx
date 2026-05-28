@@ -1,44 +1,11 @@
 import { useEffect, useState } from 'react'; // Added useState
-import { useForm, Controller } from 'react-hook-form';
+import { useForm} from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Select from 'react-select';
-//import { db } from '../lib/supabase';
 import { Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase'; // Use Supabase
 
-const TEAMS = [
-  { value: 'Mbabane Swallows', label: 'Mbabane Swallows' },
-  { value: 'Mbabane Highlanders', label: 'Mbabane Highlanders' },
-  { value: 'Manzini Wanderers', label: 'Manzini Wanderers' },
-  { value: 'Moneni Pirates', label: 'Moneni Pirates' },
-  { value: 'Green Mamba', label: 'Green Mamba' }
-];
-/*
-const TOURNAMENTS = [
-  { value: 'MTN Premier League', label: 'MTN Premier League' },
-  { value: 'Mulasport NFD', label: 'Mulasport NFD' },
-  { value: 'Ingwenyama Cup', label: 'SMVA Ingwenyama Cup' }
-];
-*/
-const STADIUMS = [
-  { value: 'Somhlolo National Stadium', label: 'Somhlolo National Stadium' },
-  { value: 'Mavuso Sports Centre', label: 'Mavuso Sports Centre' }
-];
-/*
-const LEAGUES = [
-  { value: 'Premier League', label: 'PLE' },
-  { value: 'Super League', label: 'Super League' },
-  { value: 'Regional League', label: 'Regional League' },
-  { value: 'NFD', label: 'NFD' }
-]; */
-const VENUES = [
-  { value: 'hhohho', label: 'Hhohho' },
-  { value: 'lubombo', label: 'Lubombo' },
-  { value: 'manzini', label: 'Manzini' },
-  { value: 'shiselweni', label: 'Shiselweni' }
-];
 const schema = z.object({
   matchDate: z.string().min(1, 'Required'),
   matchNo: z.string().min(1, 'Required'),
@@ -63,7 +30,7 @@ export default function IncidentReport() {
   const { matchData: match, mode } = location.state || {}; // Extract mode
   const isViewOnly = mode === 'view';
 
-  const { register, handleSubmit, control, reset, formState: { isSubmitting, errors } } = useForm({
+  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       matchDate: match?.date || new Date().toISOString().split('T')[0],
@@ -130,11 +97,9 @@ export default function IncidentReport() {
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('incident-photos')
           .upload(fileName, file);
-
         if (uploadError) throw uploadError;
         imageUrl = uploadData.path;
       }
-
 
       // 3. Save to 'incident_reports' table
       const { error: reportError } = await supabase
@@ -177,8 +142,7 @@ export default function IncidentReport() {
         <div className="bg-gradient-to-r from-red-700 via-red-800 to-red-950 px-8 py-10 sm:px-12">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-red-100">Incident Management</p>
-              <h1 className="text-3xl font-bold text-white mt-2">Incident Report</h1>
+              <p className="text-sm uppercase tracking-[0.24em] text-red-100">Incident Report</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <span className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm text-white">Security & Safety</span>
@@ -195,10 +159,11 @@ export default function IncidentReport() {
               <Input label="Match Date" type="date" {...register('matchDate')} error={errors.matchDate} disabled={isViewOnly || !!match} />
               <Input label="Match Number" {...register('matchNo')} error={errors.matchNo} disabled={isViewOnly} />
               <Input label="Kick-off time" type="time" {...register('kickOff')} error={errors.kickOff} disabled={isViewOnly} />
-              <SearchableDropdown label="Home Team" name="homeTeam" control={control} options={TEAMS} error={errors.homeTeam} disabled={isViewOnly || !!match} />
-              <SearchableDropdown label="Away Team" name="awayTeam" control={control} options={TEAMS} error={errors.awayTeam} disabled={isViewOnly || !!match} />
-              <SearchableDropdown label="Venue" name="venue" control={control} options={VENUES} error={errors.venue} disabled={isViewOnly || !!match} />
-              <SearchableDropdown label="Stadium" name="stadium" control={control} options={STADIUMS} error={errors.stadium} disabled={isViewOnly || !!match} />
+              <SummaryBadge label="Home Team" value={match?.homeTeam || 'Unknown'} />
+              <SummaryBadge label="Away Team" value={match?.awayTeam || 'Unknown'} />
+              <SummaryBadge label="Venue" value={match?.venue || 'Unknown'} />
+              <SummaryBadge label="Stadium" value={match?.stadium || 'Unknown'} />
+                  
             </div>
           </section>
 
@@ -258,21 +223,11 @@ export default function IncidentReport() {
   </div>
 );
 }
-
-// Helpers updated for Error handling
-function SearchableDropdown({ label, name, control, options, error, disabled }: any) {
+function SummaryBadge({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <Controller name={name} control={control} render={({ field }) => (
-        <Select {...field} options={options} onChange={(v: any) => field.onChange(v.value)} value={options.find((o: any) => o.value === field.value)} isDisabled={disabled}
-          styles={{ 
-            control: (base) => ({ ...base, borderColor: error ? '#dc2626' : '#d1d5db', padding: '2px' }),
-            option: (base) => ({ ...base, color: 'black' }), singleValue: (base) => ({ ...base, color: 'black' }) 
-          }} 
-        />
-      )} />
-      {error && <p className="text-red-600 text-xs mt-1">{error.message}</p>}
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-medium text-slate-900">{value}</p>
     </div>
   );
 }
