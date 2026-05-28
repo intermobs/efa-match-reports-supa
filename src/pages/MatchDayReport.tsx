@@ -112,14 +112,14 @@ export default function MatchDayReport() {
   };
 
   return (
-    <div className="w-screen min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+  <div className="w-screen min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 w-full">
+      <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+       
           <div className="bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-700 px-8 py-10 sm:px-12">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.24em] text-sky-100">Match Day Report</p>
-               
               </div>
               <div className="flex flex-wrap gap-3">
                 <span className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm text-white">Match ID: {match?.id ?? 'N/A'}</span>
