@@ -183,3 +183,42 @@ export const VENUES = [
   { value: 'manzini', label: 'Manzini' },
   { value: 'shiselweni', label: 'Shiselweni' }
 ];
+
+export const FIELD_LABELS: Record<string, string> = {
+  expected_attendance: 'What is the expected stadium attendance?',
+  venue_meeting: 'How was the venue Safety and Security meeting?',
+  stewards_briefing: 'How was the briefing of the stewards’ supervisors?',
+  control_measures: 'What are the control measures?',
+  match_coordination: 'How was the match coordination meeting?',
+  loc_cooperation: 'How was the cooperation with the organizing committee?',
+  team_trainings: 'How was the cooperation with the organizing committee?',
+  voc_commander_cooperation: 'How was the cooperation with the VOC Commander?',
+  stadium_authority_cooperation: 'How was the cooperation with the stadium authority?',
+  ple_delegation_cooperation: 'How was the cooperation with the PLE Office?',
+  attendance: 'What was the stadium attendance?',
+  access_control: 'How was the access control operation?',
+  staircases: 'Were staircases and gangways clear of spectators?',
+  supporter_behavior: 'How was the general behavior of the supporters?',
+  official_behavior: 'How was the behavior of team officials?',
+  voc_interaction: 'How was the interaction with the VOC?',
+  stadium_cleanliness: 'Were the stadium surroundings clean?',
+  security_debrief: 'How was the general security debriefing?',
+  stadium_authority: 'How was the cooperation with the stadium authority?',
+  ple_delegation: 'How was the cooperation with the PLE delegation?',
+  incident_location: 'Where and when did the incident take place?',
+  incident_description: 'Please specify what happened.',
+  incident_resolution: 'What actions were taken?',
+  additional_information: 'Any additional information?',
+  incident_photo_url: 'Incident Photo',
+  overall_evaluation: 'Overall evaluation',
+  issues_description: 'Issues or concerns',
+  
+};
+
+export const FIELD_ORDERS: Record<string, string[]> = {
+  m1: ['expected_attendance', 'venue_meeting', 'stewards_briefing', 'control_measures', 'match_coordination', 'team_trainings', 'voc_commander_cooperation', 'stadium_authority_cooperation', 'ple_delegation_cooperation', 'overall_evaluation', 'issues_description'],
+  day: ['attendance', 'access_control', 'staircases', 'supporter_behavior', 'official_behavior', 'voc_interaction', 'stadium_cleanliness', 'security_debrief', 'loc_cooperation', 'stadium_authority', 'ple_delegation', 'overall_evaluation', 'issues_description'],
+  incident: ['incident_location', 'incident_description', 'incident_resolution', 'additional_information']
+};
+
+export const METADATA_KEYS = ['home_team', 'id', 'match_id', 'away_team', 'date', 'venue', 'stadium', 'assigned_officer_name', 'assigned_officer', 'tournament', 'league', 'officer_email', 'report_id', 'created_at', 'updated_at', 'status', 'officer_name', 'submitted_at'];
