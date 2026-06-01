@@ -134,18 +134,18 @@ export default function IncidentReport() {
   };
   
   return (
-  <div className="w-screen min-h-screen bg-gray-50 flex items-center justify-center p-4">
+  <div className="w-screen min-h-screen !bg-gray-50 flex items-center justify-center p-4">
     <div className="mx-auto flex max-w-6xl flex-col gap-6 w-full">
-      <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+      <div className="overflow-hidden rounded-[32px] border border-slate-200 !bg-white shadow-xl shadow-slate-200/50">
         
         {/* Gradient Header */}
-        <div className="bg-gradient-to-r from-red-700 via-red-800 to-red-950 px-8 py-10 sm:px-12">
+        <div className="!bg-gradient-to-r from-red-700 via-red-800 to-red-950 px-8 py-10 sm:px-12">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-red-100">Incident Report</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <span className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm text-white">Security & Safety</span>
+              <span className="rounded-2xl border border-white/15 !bg-white/10 px-4 py-2 text-sm text-white">Security & Safety</span>
             </div>
           </div>
         </div>
@@ -153,7 +153,7 @@ export default function IncidentReport() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
           
           {/* Incident Details Section */}
-          <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 !bg-slate-50 p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Incident Details</h2>
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <Input label="Match Date" type="date" {...register('matchDate')} error={errors.matchDate} disabled={isViewOnly || !!match} />
@@ -168,20 +168,20 @@ export default function IncidentReport() {
           </section>
 
           {/* Incident Narrative Section */}
-          <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 !bg-slate-50 p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Incident Description</h2>
             <div className="mt-6 space-y-5">
-              <TextArea className="bg-white" label="Where and when did the incident take place?" {...register('incidentLocation')} error={errors.incidentLocation} disabled={isViewOnly} />
-              <TextArea className="bg-white" label="Please specify as accurately as possible, what happened." {...register('whatHappened')} error={errors.whatHappened} disabled={isViewOnly} />
-              <TextArea className="bg-white" label="What actions were taken to resolve the Incident?" {...register('actionsTaken')} error={errors.actionsTaken} disabled={isViewOnly} />
-              <TextArea className="bg-white" label="Any Additional Information" {...register('additionalInfo')} error={errors.additionalInfo} disabled={isViewOnly} />
+              <TextArea className="!bg-white" label="Where and when did the incident take place?" {...register('incidentLocation')} error={errors.incidentLocation} disabled={isViewOnly} />
+              <TextArea className="!bg-white" label="Please specify as accurately as possible, what happened." {...register('whatHappened')} error={errors.whatHappened} disabled={isViewOnly} />
+              <TextArea className="!bg-white" label="What actions were taken to resolve the Incident?" {...register('actionsTaken')} error={errors.actionsTaken} disabled={isViewOnly} />
+              <TextArea className="!bg-white" label="Any Additional Information" {...register('additionalInfo')} error={errors.additionalInfo} disabled={isViewOnly} />
             </div>
           </section>
 
           {/* Photo Upload Section */}
-          <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 !bg-slate-50 p-6 shadow-sm">
             <h3 className="text-xl font-semibold text-slate-900">Evidence</h3>
-            <div className="mt-6 p-6 border-2 border-dashed border-slate-300 rounded-2xl bg-white text-center">
+            <div className="mt-6 p-6 border-2 border-dashed border-slate-300 rounded-2xl !bg-white text-center">
               <Upload className="mx-auto text-slate-400 mb-2" />
               <input 
                 type="file" 
@@ -207,11 +207,11 @@ export default function IncidentReport() {
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-end">
-            <button type="button" onClick={() => navigate('/dashboard')} className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">Cancel</button>
+            <button type="button" onClick={() => navigate('/dashboard')} className="inline-flex items-center justify-center rounded-2xl border border-slate-300 !bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:!bg-slate-100">Cancel</button>
             {!isViewOnly && (
               <>
-                <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">Save Draft</button>
-                <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-2xl bg-red-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/20 transition hover:bg-red-800">
+                <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-300 !bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:!bg-slate-100">Save Draft</button>
+                <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-2xl !bg-red-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/20 transition hover:!bg-red-800">
                   {isSubmitting ? 'Submitting...' : 'Submit Report'}
                 </button>
               </>
@@ -225,7 +225,7 @@ export default function IncidentReport() {
 }
 function SummaryBadge({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-2xl !bg-white p-4 shadow-sm ring-1 ring-slate-200">
       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{label}</p>
       <p className="mt-2 text-sm font-medium text-slate-900">{value}</p>
     </div>
@@ -236,7 +236,7 @@ function Input({ label, error, disabled, ...props }: any) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input {...props} disabled={disabled} className={`w-full px-4 py-3 border rounded-lg text-black ${error ? 'border-red-600' : 'border-gray-300'} ${disabled ? 'bg-gray-100' : ''}`} />
+      <input {...props} disabled={disabled} className={`w-full px-4 py-3 border rounded-lg text-black ${error ? 'border-red-600' : 'border-gray-300'} ${disabled ? '!bg-gray-100' : ''}`} />
       {error && <p className="text-red-600 text-xs mt-1">{error.message}</p>}
     </div>
   );
@@ -246,7 +246,7 @@ function TextArea({ label, error, disabled, ...props }: any) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-      <textarea {...props} disabled={disabled} rows={3} className={`w-full px-4 py-3 border rounded-lg text-black ${error ? 'border-red-600' : 'border-gray-300'} ${disabled ? 'bg-gray-100' : ''}`} />
+      <textarea {...props} disabled={disabled} rows={3} className={`w-full px-4 py-3 border rounded-lg text-black ${error ? 'border-red-600' : 'border-gray-300'} ${disabled ? '!bg-gray-100' : ''}`} />
       {error && <p className="text-red-600 text-xs mt-1">{error.message}</p>}
     </div>
   );
