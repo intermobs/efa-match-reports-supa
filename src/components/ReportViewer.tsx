@@ -1,3 +1,4 @@
+//import React from 'react';
 import { X, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { FIELD_LABELS, FIELD_ORDERS } from '../hooks/constants';
@@ -23,8 +24,8 @@ export function ReportViewer({ data, onClose, title, match }: any) {
   const formatLabel = (key: string) => FIELD_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto shadow-2xl p-8">
+    <div className="fixed inset-0 !bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="!bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto shadow-2xl p-8">
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <h2 className="text-xl font-bold">{headerTitle}</h2>
           <button onClick={onClose} className="text-red-600"><X size={24}/></button>
@@ -42,7 +43,7 @@ export function ReportViewer({ data, onClose, title, match }: any) {
 
           {/* Match Metadata Top Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-2xl border border-slate-200 !bg-slate-50 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Match</p>
               <p className="text-lg font-semibold text-slate-900">{match.homeTeam || 'N/A'} vs {match.awayTeam || 'N/A'}</p>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2"></p>               
@@ -65,7 +66,7 @@ export function ReportViewer({ data, onClose, title, match }: any) {
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-2xl border border-slate-200 !bg-slate-50 p-4">
               <div className="grid grid-cols-2 gap-3 text-sm text-slate-700">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">Date</p>
@@ -95,10 +96,10 @@ export function ReportViewer({ data, onClose, title, match }: any) {
         </div>
 
         <div className="mt-8 flex gap-3">
-          <button onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-bold">Close</button>
+          <button onClick={onClose} className="flex-1 !bg-gray-100 text-gray-700 py-2 rounded-lg font-bold">Close</button>
           <button 
             onClick={() => window.print()} 
-            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-6 py-2 !bg-blue-600 text-white font-semibold rounded-lg hover:!bg-blue-700 transition flex items-center gap-2 disabled:!bg-gray-400 disabled:cursor-not-allowed"
           >
             <Printer size={18} /> Print Report
           </button>
