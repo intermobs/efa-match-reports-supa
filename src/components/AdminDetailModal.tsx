@@ -141,15 +141,15 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
         />
       )}
 
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
-          <div className="p-6 border-b flex justify-between items-center bg-white sticky top-0 z-10">
+      <div className="fixed inset-0 !bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="!bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+          <div className="p-6 border-b flex justify-between items-center !bg-white sticky top-0 z-10">
             <h2 className="text-lg text-blue-900 font-bold">Admin Review: {match.homeTeam} vs {match.awayTeam}</h2>
-            <button onClick={onClose} className="p-2 text-red-600 hover:bg-gray-100 rounded-full"><X size={24}/></button>
+            <button onClick={onClose} className="p-2 text-red-600 hover:!bg-gray-100 rounded-full"><X size={24}/></button>
           </div>
 
         {/* Tab Navigation */}
-        <div className="px-6 pt-4 border-b bg-gray-50">
+        <div className="px-6 pt-4 border-b !bg-gray-50">
           <div className="flex gap-1 overflow-x-auto">
             {tabs.map((tab) => (
               <button
@@ -158,10 +158,10 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
                 disabled={!tab.available}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                   selectedTab === tab.id
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? '!bg-blue-600 text-white shadow-sm'
                     : tab.available
-                      ? 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                      ? '!bg-white text-gray-700 hover:!bg-gray-100 border border-gray-200'
+                      : '!bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                 }`}
               >
                 {tab.label}
@@ -186,7 +186,7 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
             </div>
             {/* Match Metadata Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-700">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-2xl border border-slate-200 !bg-slate-50 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Match</p>
                 <p className="text-lg font-semibold text-slate-900">{match.homeTeam || 'N/A'} vs {match.awayTeam || 'N/A'}</p>
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2"></p>
@@ -209,7 +209,7 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
                   </div>
                 </div>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-2xl border border-slate-200 !bg-slate-50 p-4">
                 <div className="grid grid-cols-2 gap-3 text-sm text-slate-700">
                   <div>
                     <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">Date</p>
@@ -249,7 +249,7 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
           )}
         </div>
 {/* Updated Footer with Print/Save PDF support */}
-          <div className="p-6 border-t flex justify-between items-center bg-gray-50">
+          <div className="p-6 border-t flex justify-between items-center !bg-gray-50">
             <button 
               onClick={handleDeleteMatch} 
               disabled={isDeleting} 
@@ -269,7 +269,7 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
               {/* This Print button triggers the browser print for the ReportViewer content */}
               <button 
                 onClick={() => window.print()} 
-                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                className="px-6 py-2 !bg-blue-600 text-white font-semibold rounded-lg hover:!bg-blue-700 transition flex items-center gap-2"
               >
                 <Printer size={18} /> Print Report
               </button>
