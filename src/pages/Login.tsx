@@ -86,7 +86,7 @@ export default function Login() {
           <button 
             type="submit"
             disabled={isLoading}
-            className="w-full !bg-blue-600 hover:!bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2"
           >
             {isLoading ? "Signing in..." : <><LogIn size={20} /><span>Log In</span></>}
           </button>
