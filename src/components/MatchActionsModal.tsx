@@ -8,7 +8,7 @@ export default function MatchActionsModal({ match, onClose, onEdit, onView }: an
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 !bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="!bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 border border-gray-100">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -26,8 +26,8 @@ export default function MatchActionsModal({ match, onClose, onEdit, onView }: an
                 <span className="text-sm font-semibold text-gray-700">{f.label}</span>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => onView(match, f.id, f.label)} className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"><Eye size={16} /></button>
-                <button onClick={() => onEdit(match, f.path)} className="p-1.5 hover:bg-indigo-100 text-indigo-600 rounded"><Edit2 size={16} /></button>             
+                <button onClick={() => onView(match, f.id, f.label)} className="p-1.5 hover:!bg-blue-100 text-blue-600 rounded"><Eye size={16} /></button>
+                <button onClick={() => onEdit(match, f.path)} className="p-1.5 hover:!bg-indigo-100 text-indigo-600 rounded"><Edit2 size={16} /></button>             
               </div>
             </div>
           ))}
