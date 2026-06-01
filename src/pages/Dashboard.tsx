@@ -350,7 +350,7 @@ export default function Dashboard() {
               {paginatedMatches.map((match: any) => (
                 <div 
                   key={match.id} 
-                  className="p-4 md:p-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 hover:bg-gray-50 cursor-pointer transition border-b md:border-b-0"
+                  className="p-4 md:p-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 hover:!bg-gray-50 cursor-pointer transition border-b md:border-b-0"
                   onClick={() => setSelectedMatch(match)}
                 >
                   <div className="flex-1 min-w-0">
@@ -365,13 +365,13 @@ export default function Dashboard() {
                     <div className="flex flex-wrap gap-2 items-center">
                       {/* Status Pill */}
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        match.status === 'Active' ? 'bg-blue-100 text-blue-700' : 
-                        match.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        match.status === 'Active' ? '!bg-blue-100 text-blue-700' : 
+                        match.status === 'Completed' ? '!bg-green-100 text-green-700' : '!bg-yellow-100 text-yellow-700'
                       }`}>
                         {match.status}
                       </span>
                       {match.hasIncident && (
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold !bg-red-100 text-red-700">
                           Incident
                         </span>
                       )}
