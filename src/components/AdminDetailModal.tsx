@@ -3,6 +3,7 @@ import { X, Trash2, Printer } from 'lucide-react';
 import { db, supabase } from '../lib/supabase';
 import { ReportViewer } from './ReportViewer';
 import { FIELD_LABELS, METADATA_KEYS } from '../hooks/constants';
+import { printReport } from '../utils/printReport';
 
 export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onClose: () => void, onDelete?: () => void }) {
   const [selectedTab, setSelectedTab] = useState<'m1' | 'day' | 'incident'>('m1');
@@ -80,8 +81,7 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
     
     fetchReportData();
   }, [selectedTab, match.id]);
-
-  
+ 
   const handleDeleteMatch = async () => {
     if (!confirm(`Are you sure you want to delete this match: ${match.homeTeam} vs ${match.awayTeam}? This will also delete all related reports and cannot be undone.`)) {
       return;
@@ -115,11 +115,6 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
     }
   };
 
-  // Filter out technical fields for match details
- // const displayData = Object.entries(match).filter(([key]) => !['id', 'userId', 'createdAt', 'status', 'officerEmail', 'assignedUserId', 'officerEmail'].includes(key));
-
-  //const topMetadataKeys = ['officer_email','home_team', 'away_team', 'date', 'venue', 'stadium', 'assignedOfficerName', 'assigned_officer','tournament', 'league','id','match_id','submitted_at','officer_name'];
-  //const filteredDisplayData = displayData.filter(([key]) => !METADATA_KEYS.includes(key));
   const filteredReportEntries = reportData ? Object.entries(reportData).filter(([key]) => !METADATA_KEYS.includes(key)) : [];
   const formatLabel = (key: string) => FIELD_LABELS[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
 
@@ -268,7 +263,16 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
               
               {/* This Print button triggers the browser print for the ReportViewer content */}
               <button 
-                onClick={() => window.print()} 
+                onClick={() => {
+                  const el = document.getElementById('printable-area');
+                  const fileName = `${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'} - ${selectedTab === 'm1' ? 'MATCH DAY -1 REPORT' : selectedTab === 'day' ? 'MATCH DAY REPORT' : 'INCIDENT REPORT'}
+`;
+                  if (el) {
+                    printReport(fileName, 'printable-area');
+                  } else {
+                    window.print();
+                  }
+                }} 
                 className="px-6 py-2 !bg-blue-600 text-white font-semibold rounded-lg hover:!bg-blue-700 transition flex items-center gap-2"
               >
                 <Printer size={18} /> Print Report
