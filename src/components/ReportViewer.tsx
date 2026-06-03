@@ -11,14 +11,12 @@ export function ReportViewer({ data, onClose, title, match }: any) {
   const getHeaderTitle = (t: string) => {
     const val = t.toLowerCase();
     if (val.includes('incident')) return 'INCIDENT REPORT';
-    // M-1 must be checked before 'day' because it contains the word 'day'
     if (val.includes('m1') || val.includes('matchday-1') || val.includes('m-1')) return 'MATCH DAY -1 REPORT';
     if (val.includes('day')) return 'MATCH DAY REPORT';
     return 'MATCH REPORT';
   };
 
   const headerTitle = getHeaderTitle(title);
- // const headerTitle = isM1 ? 'MATCH DAY -1 REPORT' : isDay ? 'MATCH DAY REPORT' : isIncident ? 'INCIDENT REPORT' : 'MATCH REPORT';
 
   const orderKey = isM1 ? 'm1' : isDay ? 'day' : isIncident ? 'incident' : null;
   const order = orderKey ? FIELD_ORDERS[orderKey as keyof typeof FIELD_ORDERS] : [];
@@ -38,7 +36,7 @@ export function ReportViewer({ data, onClose, title, match }: any) {
       <div className="!bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto shadow-2xl p-8 print:max-h-full print:overflow-visible print:w-auto print:max-w-none print:shadow-none print:rounded-none print:p-0">
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <h2 className="text-lg text-blue-900 font-bold">{headerTitle}</h2>
-          <button onClick={onClose} className="p-2 text-red-600 hover:bg-gray-100 rounded-full"><X size={24}/></button>
+          <button onClick={onClose} className="p-2 text-red-600 hover:!bg-gray-100 rounded-full"><X size={24}/></button>
         </div>
 
         <div id="printable-area" className="space-y-8">
@@ -80,7 +78,7 @@ export function ReportViewer({ data, onClose, title, match }: any) {
             <div className="print-meta-card rounded-2xl border border-slate-200 !bg-slate-50 p-4">
               <div className="print-meta-grid grid grid-cols-2 gap-3 text-sm text-slate-700">
                 <div>
-                  <p className="meta-label text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-1">Date</p>
+                  <p className="meta-label text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold mb-1">Match Date</p>
                   <p className="meta-value font-medium text-slate-900">{match.date || 'N/A'}</p>
                 </div>
                 <div>
@@ -95,7 +93,7 @@ export function ReportViewer({ data, onClose, title, match }: any) {
           <div className="space-y-4 print-fields">
             {orderedReportEntries.map(([key, val]: any) => (
               <div key={key} className="print-field-row border-b pb-3">
-                <p className="print-field-label text-[10px] font-bold text-gray-400 uppercase tracking-widest">{formatLabel(key)}</p>
+                <p className="print-field-label text-[12px] font-bold text-gray-600 uppercase tracking-widest">{formatLabel(key)}</p>
                 {key === 'incident_photo_url' && val ? (
                   <img src={supabase.storage.from('incident-photos').getPublicUrl(val).data.publicUrl} className="print-image mt-2 h-48 rounded-lg border" />
                 ) : (
