@@ -207,7 +207,7 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
               <div className="rounded-2xl border border-slate-200 !bg-slate-50 p-4">
                 <div className="grid grid-cols-2 gap-3 text-sm text-slate-700">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">Date</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500 font-semibold">Match Date</p>
                     <p className="font-medium text-slate-900 mt-1">{match.date || 'N/A'}</p>
                   </div>
                   <div>
@@ -224,7 +224,7 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                 {filteredReportEntries.map(([k, v]: any) => (
                    <div key={k} className="border-b pb-2">
-                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{formatLabel(k)}</p>
+                     <p className="text-[12px] font-bold text-gray-600 uppercase tracking-widest">{formatLabel(k)}</p>
                      {k === 'incident_photo_url' && v ? (
                        <img src={supabase.storage.from('incident-photos').getPublicUrl(v).data.publicUrl} className="mt-2 h-32 rounded-lg border" />
                      ) : (
@@ -243,7 +243,7 @@ export function AdminDetailModal({ match, onClose, onDelete }: { match: any, onC
             </div>
           )}
         </div>
-{/* Updated Footer with Print/Save PDF support */}
+
           <div className="p-6 border-t flex justify-between items-center !bg-gray-50">
             <button 
               onClick={handleDeleteMatch} 
