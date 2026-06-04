@@ -75,14 +75,6 @@ export default function DashboardHeader({
             </div>
           </div>
 
-          {/* Center Section - Welcome message (hidden on mobile) */}
-          <div className="hidden md:flex flex-col justify-center">
-            <p className="text-sm text-gray-600">Welcome, <span className="font-semibold text-gray-900">{userName}</span></p>
-            <span className="text-xs !bg-blue-100 text-blue-800 font-bold rounded px-2 py-0.5 w-fit uppercase">
-              {userRole}
-            </span>
-          </div>
-
           {/* Right Section - Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
             
@@ -165,7 +157,7 @@ export default function DashboardHeader({
                 aria-label="User menu"
               >
                 <User size={20} />
-                <span className="text-sm font-medium hidden md:inline truncate max-w-[120px]">{userEmail}</span>
+                <span className="text-sm font-medium hidden md:inline truncate max-w-[120px]">{userName}</span>
               </button>
 
               {/* User Menu Dropdown */}
