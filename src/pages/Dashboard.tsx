@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Plus, X, Trophy, Users, Clock } from 'lucide-react';
+import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar } from 'lucide-react';
 import { db, getCurrentUser } from '../lib/supabase';
 import Select from 'react-select';
-import MatchActionsModal from '../components/MatchActionsModal'; // Ensure this exists
+import MatchActionsModal from '../components/MatchActionsModal';
 import DashboardHeader from '../components/DashboardHeader';
 import { TOURNAMENTS, LEAGUES, TEAMS, VENUES, STADIUMS } from '../hooks/constants';
-//import html2pdf from 'html2pdf.js';
 import { AdminDetailModal } from '../components/AdminDetailModal';
 import { ReportViewer } from '../components/ReportViewer';
 
@@ -39,6 +38,11 @@ export default function Dashboard() {
   const [reportData, setReportData] = useState<any>(null);
   const [reportMatch, setReportMatch] = useState<any>(null);
   const [viewingForm, setViewingForm] = useState<string>('');
+  const [showOfficerModal, setShowOfficerModal] = useState(false);
+  const [selectedOfficerFilter, setSelectedOfficerFilter] = useState<any>(null);
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [availableReports, setAvailableReports] = useState<{ [key: string]: boolean }>({});
   const itemsPerPage = 10;
 
   const handleNavigateToForm = (match: any, path: string) => {
@@ -78,6 +82,29 @@ export default function Dashboard() {
     } catch (error) {
       console.error(error);
       alert('Error fetching report data.');
+    }
+  };
+
+  const checkAvailableReports = async (match: any) => {
+    try {
+      const m1Id = `M1-${match.id}`;
+      const mdId = `MD-${match.id}`;
+      const irId = `IR-${match.id}`;
+
+      const [m1Result, mdResult, irResult] = await Promise.all([
+        db.from('m1_reports').select('id').eq('id', m1Id).maybeSingle(),
+        db.from('matchday_reports').select('id').eq('id', mdId).maybeSingle(),
+        db.from('incident_reports').select('id').eq('id', irId).maybeSingle(),
+      ]);
+
+      setAvailableReports({
+        m1: !!m1Result.data,
+        day: !!mdResult.data,
+        incident: !!irResult.data,
+      });
+    } catch (error) {
+      console.error('Error checking available reports:', error);
+      setAvailableReports({ m1: false, day: false, incident: false });
     }
   };
 
@@ -189,11 +216,30 @@ export default function Dashboard() {
 
         const { data: officersData, error: officersError } = await db
           .from('users')
-          .select('id, full_name')
+          .select('id, full_name, email')
           .eq('role', 'officer');
 
         if (officersError) throw officersError;
-        setOfficers((officersData ?? []).map((d: any) => ({ value: d.id, label: d.full_name || d.fullName })));
+
+        const base = (officersData ?? []).map((d: any) => ({ value: d.id, label: d.full_name || d.fullName, email: d.email }));
+
+        // Enrich each officer with their total completed matches
+        const enriched = await Promise.all(base.map(async (o: any) => {
+          try {
+            const { count, error: countError } = await db
+              .from('matches')
+              .select('id', { count: 'exact', head: true })
+              .eq('assignedUserId', o.value)
+              .eq('status', 'Completed');
+            if (countError) throw countError;
+            return { ...o, completed: count ?? 0 };
+          } catch (e) {
+            console.error('Error fetching completed count for officer', o.value, e);
+            return { ...o, completed: 0 };
+          }
+        }));
+
+        setOfficers(enriched);
       } catch (error) {
         console.error(error);
       }
@@ -287,10 +333,43 @@ export default function Dashboard() {
   }, [currentUser, isAdmin]);
 
   const filteredMatches = matches
-    .filter(m => (m.homeTeam + " " + m.awayTeam).toLowerCase().includes(search.toLowerCase()))
+    .filter((m: any) => {
+      const teamText = ((m.homeTeam || '') + ' ' + (m.awayTeam || '')).toLowerCase();
+      const officerName = (m.assignedOfficerName || '').toLowerCase();
+      const stadiumName = (m.stadium || '').toLowerCase();
+      const term = (search || '').toLowerCase().trim();
+
+      if (term) {
+        const inTeam = teamText.includes(term);
+        const inOfficer = officerName.includes(term);
+        const inStadium = stadiumName.includes(term);
+        if (!inTeam && !inOfficer && !inStadium) return false;
+      }
+
+      if (selectedOfficerFilter && selectedOfficerFilter.value) {
+        if (m.assignedUserId !== selectedOfficerFilter.value) return false;
+      }
+
+      if (dateFrom) {
+        const md = new Date(m.date);
+        const from = new Date(dateFrom + 'T00:00:00');
+        if (isNaN(md.getTime()) || md < from) return false;
+      }
+
+      if (dateTo) {
+        const md = new Date(m.date);
+        const to = new Date(dateTo + 'T23:59:59');
+        if (isNaN(md.getTime()) || md > to) return false;
+      }
+
+      return true;
+    })
     .sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
   const paginatedMatches = filteredMatches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const m1PendingCount = matches.filter((m: any) => m.status === 'M-1 Pending').length;
+  const activeCount = matches.filter((m: any) => m.status === 'Active').length;
+  const incompleteTotal = m1PendingCount + activeCount;
   return (
     <div className="w-screen min-h-screen !bg-gray-50 flex flex-col">
       <DashboardHeader
@@ -305,42 +384,86 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto">
         
         {isAdmin && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <StatCard title="Coming Matches" value={matches.filter((m: any) => m.status === 'M-1 Pending').length} icon={<Clock className="text-orange-300" />} />
-            <StatCard title="Active Matches" value={matches.filter((m: any) => m.status === 'Active').length} icon={<ShieldAlert className="text-green-600" />} />
-            <StatCard title="Total Matches" value={matches.length} icon={<Trophy className="text-blue-600" />} />
-            <StatCard title="Registered Officers" value={officers.length} icon={<Users className="text-black" />} />
-            <StatCard title="Reported Incidents" value={matches.filter((m: any) => m.hasIncident === true).length} icon={<ShieldAlert className="text-red-600" />} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5 mb-12">
+            <StatCard title="Coming Matches" subtitle="Awaiting M-1" value={matches.filter((m: any) => m.status === 'M-1 Pending').length} icon={<Clock className="text-orange-300" />} />
+            <StatCard title="Active Matches" subtitle="In progress now" value={matches.filter((m: any) => m.status === 'Active').length} icon={<ShieldAlert className="text-green-600" />} />
+            <StatCard title="Total Matches" subtitle="Scheduled & completed" value={matches.length} icon={<Trophy className="text-blue-600" />} />
+            <StatCard title="Registered Officers" subtitle="Click to view details" value={officers.length} icon={<Users className="text-black" />} onClick={() => setShowOfficerModal(true)} />
+            <StatCard title="Reported Incidents" subtitle="Incidents logged" value={matches.filter((m: any) => m.hasIncident === true).length} icon={<ShieldAlert className="text-red-600" />} />
           </div>
         )}
         {!isAdmin && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <StatCard title="Assigned Matches" value={matches.filter((m: any) => m.status === 'M-1 Pending').length} icon={<Clock className="text-orange-300" />} />     
+            <StatCard
+              title="Incomplete Tasks"
+              subtitle={`Awaiting Matchday Minus 1 [ ${m1PendingCount} ]`}
+              subtitle2={`Awaiting Matchday [ ${activeCount} ]`}
+              value={incompleteTotal}
+              icon={<Clock className="text-orange-300" />}
+            />
           </div>
         )}
         <div className="!bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-4 md:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="p-4 md:p-6 border-b">
             <h2 className="text-lg font-bold text-gray-800">Matches History</h2>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <input 
-                placeholder="Search..." 
-                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm w-full sm:w-auto" 
-                onChange={(e) => setSearch(e.target.value)} 
-              />
-             {/*Only show Add Match button to admins*/}
-              {isAdmin && (
-                <button 
-                  onClick={() => setShowAddForm(!showAddForm)} 
-                  className={`px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-2 text-white font-semibold transition duration-200 whitespace-nowrap ${
-                    showAddForm 
-                      ? '!bg-red-600 hover:!bg-red-700' 
-                      : '!bg-blue-600 hover:!bg-blue-700'
-                  }`}
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr_220px_220px] xl:grid-cols-[2fr_1fr_1fr_220px_220px] items-end">
+              <div className="w-full">
+                <label className="sr-only" htmlFor="dashboard-search">Search teams or officer</label>
+                <input
+                  id="dashboard-search"
+                  placeholder="Search by Teams, Officer, or Stadium"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white"
+                />
+              </div>
+              <div className="relative w-full">
+                <label className="sr-only" htmlFor="date-from">Date from</label>
+                <input
+                  id="date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full pr-10 px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm !bg-white [&::-webkit-calendar-picker-indicator]:!bg-orange-300"
+                />
+                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              </div>
+
+              <div className="relative w-full">
+                <label className="sr-only font" htmlFor="date-to">Date to</label>
+                <input
+                  id="date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full pr-10 px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm !bg-white [&::-webkit-calendar-picker-indicator]:!bg-orange-300"
+                />
+                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              </div>
+
+              <div className="flex flex-wrap gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setSearch(''); setSelectedOfficerFilter(null); setDateFrom(''); setDateTo(''); }}
+                  className="inline-flex items-center justify-center rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition"
                 >
-                  {showAddForm ? <X size={16} /> : <Plus size={16} />} 
-                  {showAddForm ? 'Cancel' : 'Add Match'}
+                  Clear
                 </button>
-              )}
+
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowAddForm(!showAddForm)}
+                    className={`inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold text-white transition ${
+                      showAddForm
+                        ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                  >
+                    {showAddForm ? <X size={16} /> : <Plus size={16} />}
+                    <span>{showAddForm ? 'Cancel' : 'Add Match'}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           {showAddForm && isAdmin && <AddMatchForm onAdd={() => { setShowAddForm(false); fetchMatches(userProfile, currentUser); }} officers={officers} />}
@@ -351,12 +474,15 @@ export default function Dashboard() {
                 <div 
                   key={match.id} 
                   className="p-4 md:p-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 hover:!bg-gray-50 cursor-pointer transition border-b md:border-b-0"
-                  onClick={() => setSelectedMatch(match)}
+                  onClick={() => {
+                    setSelectedMatch(match);
+                    checkAvailableReports(match);
+                  }}
                 >
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-900 truncate">{match.homeTeam} vs {match.awayTeam}</h3>
                     <p className="text-sm text-gray-500 mt-1">{match.date} • {match.stadium}</p>
-                    <span className="inline-block mt-2 px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600 font-medium">
+                    <span className="inline-block mt-2 px-2 py-0.5 !bg-gray-100 rounded text-xs text-gray-600 font-medium">
                         Assigned: {match.assignedOfficerName || 'Unassigned'}
                     </span>
                   </div>
@@ -391,9 +517,60 @@ export default function Dashboard() {
             onClose={() => setSelectedMatch(null)} 
             onEdit={handleNavigateToForm}
             onView={handleViewReport}
+            availableReports={availableReports}
             onPrint={() => window.print()} 
           />
         )}
+
+      {showOfficerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-[28px] bg-white shadow-2xl overflow-hidden border border-slate-200">
+            <div className="flex items-center justify-between gap-4 p-6 border-b border-slate-200">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-sky-600 font-semibold">Registered Officers</p>
+                <h3 className="text-2xl font-bold text-slate-900 mt-2">Officer Directory</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOfficerModal(false)}
+                className="rounded-full p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">A quick view of registered officers for administrative actions.</p>
+              <div className="grid gap-3">
+                {officers.length > 0 ? officers.map((officer: any, index: number) => (
+                  <div key={officer.value || index} className="rounded-3xl border border-slate-200 p-4 bg-slate-50 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-slate-900">{officer.label || 'Unnamed Officer'}</p>
+                      <p className="text-xs text-slate-500">{officer.email || 'No email'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-slate-700">{(officer.completed ?? 0)}</p>
+                      <p className="text-xs text-slate-500">Completed</p>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="rounded-3xl border border-dashed border-slate-300 p-6 text-center text-slate-500">
+                    No registered officers available yet.
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="border-t border-slate-200 p-4 text-right">
+              <button
+                type="button"
+                onClick={() => setShowOfficerModal(false)}
+                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {reportData && (
         <ReportViewer 
@@ -421,7 +598,14 @@ function AddMatchForm({ onAdd, officers }: { onAdd: () => void, officers: any[] 
     <Select options={LEAGUES} menuPortalTarget={document.body} placeholder="League" styles={selectStyles} onChange={(v: any) => setData({...data, league: v.label})} />
     <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Home Team" styles={selectStyles} onChange={(v: any) => setData({...data, homeTeam: v.value})}/>
     <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Away Team" styles={selectStyles} onChange={(v: any) => setData({...data, awayTeam: v.value})}/>
-    <input type="date" className="p-2 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onChange={e => setData({...data, date: e.target.value})} />
+    <input 
+      type="date" 
+      className="p-2 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
+      [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer 
+      [&::-webkit-calendar-picker-indicator]:!bg-orange-300 [&::-webkit-calendar-picker-indicator]:font-white"
+       
+      onChange={e => setData({...data, date: e.target.value})} 
+    />
     <Select options={VENUES} menuPortalTarget={document.body} placeholder="Venue" styles={selectStyles} onChange={(v: any) => setData({...data, venue: v.value})} />
     <Select options={STADIUMS} menuPortalTarget={document.body} placeholder="Stadium" styles={selectStyles} onChange={(v: any) => setData({...data, stadium: v.value})}  />
     <Select options={officers} menuPortalTarget={document.body} placeholder="Assign Officer" styles={selectStyles} onChange={(v: any) => setData({...data, assignedUserId: v.value, assignedOfficerName: v.label})} />
@@ -433,14 +617,24 @@ function AddMatchForm({ onAdd, officers }: { onAdd: () => void, officers: any[] 
   );
 }
 // new printable area component
-function StatCard({ title, value, icon }: any) {
+function StatCard({ title, subtitle,subtitle2, value, icon, onClick }: any) {
+  const clickable = Boolean(onClick);
   return (
-    <div className="!bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-200 flex items-center gap-4">
-      <div className="p-3 !bg-gray-50 rounded-lg flex-shrink-0">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-500 truncate">{title}</p>
-        <p className="text-2xl md:text-3xl font-bold text-gray-900">{value}</p>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full text-left bg-white p-6 rounded-3xl shadow-sm border border-gray-100 transition-all duration-200 ${clickable ? 'hover:shadow-xl hover:border-gray-200 cursor-pointer transform hover:-translate-y-0.5' : ''}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-600">{title}</p>
+          {subtitle && <p className="mt-2 text-xs text-slate-500">{subtitle}</p>}
+          {subtitle2 && <p className="mt-2 text-xs text-slate-500">{subtitle2}</p>}
+        </div>
+        <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">{icon}</div>
       </div>
-    </div>
+      <div className="mt-6">
+        <p className="text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
+      </div>
+    </button>
   );
 }
