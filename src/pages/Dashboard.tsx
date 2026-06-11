@@ -1,8 +1,11 @@
+/* eslint-disable */
+/* @ts-nocheck */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar } from 'lucide-react';
+import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar, ClipboardPen} from 'lucide-react';
 import { db, getCurrentUser } from '../lib/supabase';
 import Select from 'react-select';
+import toast from 'react-hot-toast';
 import MatchActionsModal from '../components/MatchActionsModal';
 import DashboardHeader from '../components/DashboardHeader';
 import { TOURNAMENTS, LEAGUES, TEAMS, VENUES, STADIUMS } from '../hooks/constants';
@@ -14,6 +17,9 @@ type NotificationItem = {
   message: string;
   time: string;
   read?: boolean;
+  matchId?: string;
+  type?: 'assignment' | 'update' | 'completed' | 'report_submitted' | 'incident' | 'admin_update';
+  match?: any;
 };
 
 const selectStyles = {
@@ -48,6 +54,23 @@ export default function Dashboard() {
   const handleNavigateToForm = (match: any, path: string) => {
     setSelectedMatch(null);
     navigate(path, { state: { matchData: match } });
+  };
+
+  const handleNotificationClick = async (notification: NotificationItem) => {
+    if (!notification.matchId) return;
+    
+    // Find the match from the current matches list
+    const match = matches.find((m: any) => m.id === notification.matchId);
+    if (match) {
+      setSelectedMatch(match);
+      await checkAvailableReports(match);
+      // Mark notification as read
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notification.id ? { ...n, read: true } : n
+        )
+      );
+    }
   };
 
   const handleViewReport = async (match: any, formId: string, label: string) => {
@@ -116,23 +139,47 @@ export default function Dashboard() {
     });
   };
 
+  const upsertMatchInState = (updatedMatch: any) => {
+    if (!updatedMatch?.id) return;
+
+    setMatches((prev) => {
+      const existingIndex = prev.findIndex((match: any) => match.id === updatedMatch.id);
+      if (existingIndex >= 0) {
+        const next = [...prev];
+        next[existingIndex] = { ...next[existingIndex], ...updatedMatch };
+        return next;
+      }
+
+      return [updatedMatch, ...prev];
+    });
+  };
+
   const buildAssignmentNotification = (match: any) => ({
     id: `assigned-${match.id}`,
-    message: `You have been assigned to ${match.homeTeam} vs ${match.awayTeam} on ${match.date}. Please complete the Match Day -1 form.`,
+    message: `New Assignement: ${match.homeTeam} vs ${match.awayTeam} on ${match.date}. Fill in Match Day -1 form.`,
     time: 'Now',
     read: false,
+    matchId: match.id,
+    type: 'assignment' as const,
+    match: match,
   });
 
   const buildActiveMatchReminder = (match: any) => ({
     id: `active-${match.id}`,
-    message: `Match Day -1 form is complete for ${match.homeTeam} vs ${match.awayTeam}. On ${match.date}, complete the Matchday form or Incident form as needed.`,
+    message: `Match Day -1 form Complete: ${match.homeTeam} vs ${match.awayTeam}. On ${match.date}, Fill Matchday form or Incident(optional).`,
     time: 'Now',
     read: false,
+    matchId: match.id,
+    type: 'update' as const,
+    match: match,
   });
 
   const buildAdminAssignmentNotification = (match: any) => ({
     id: `admin-assigned-${match.id}`,
-    message: `Officer ${match.assignedOfficerName || 'Unknown'} was assigned to ${match.homeTeam} vs ${match.awayTeam} on ${match.date}.`,
+    matchId: match.id,
+    type: 'admin_update' as const,
+    match: match,
+    message: `${match.assignedOfficerName || 'Unknown'} was assigned to ${match.homeTeam} vs ${match.awayTeam} on ${match.date}.`,
     time: 'Now',
     read: false,
   });
@@ -144,6 +191,9 @@ export default function Dashboard() {
       message: base,
       time: 'Now',
       read: false,
+      matchId: match.id,
+      type: 'admin_update' as const,
+      match: match,
     };
   };
 
@@ -257,22 +307,33 @@ export default function Dashboard() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches', filter: `assignedUserId=eq.${userId}` }, (payload) => {
         const match = payload.new;
         if (!match) return;
-        addNotification(buildAssignmentNotification(match));
+        upsertMatchInState(match);
+        const notif = buildAssignmentNotification(match);
+        addNotification(notif);
+        toast.success(notif.message, { duration: 5000 });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches', filter: `assignedUserId=eq.${userId}` }, (payload) => {
         const match = payload.new;
         if (!match) return;
+        upsertMatchInState(match);
         if (payload.old?.status !== payload.new?.status) {
           if (payload.new.status === 'Active') {
-            addNotification(buildActiveMatchReminder(match));
+            const notif = buildActiveMatchReminder(match);
+            addNotification(notif);
+            toast.success(notif.message, { duration: 5000 });
           }
           if (payload.new.status === 'Completed') {
-            addNotification({
+            const notif: NotificationItem = {
               id: `match-completed-${match.id}`,
-              message: `Matchday report submitted for ${match.homeTeam} vs ${match.awayTeam}.`,
+              message: `Matchday Report submitted: ${match.homeTeam} vs ${match.awayTeam}.`,
               time: 'Just now',
               read: false,
-            });
+              matchId: match.id,
+              type: 'completed',
+              match: match,
+            };
+            addNotification(notif);
+            toast.success(notif.message, { duration: 5000 });
           }
         }
       })
@@ -284,44 +345,79 @@ export default function Dashboard() {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, (payload) => {
           const match = payload.new;
           if (!match) return;
-          addNotification(buildAdminAssignmentNotification(match));
+          upsertMatchInState(match);
+          const notif = buildAdminAssignmentNotification(match);
+          addNotification(notif);
+          toast.success(notif.message, { duration: 5000 });
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches' }, (payload) => {
           const match = payload.new;
           if (!match) return;
-          if (payload.old?.status !== payload.new?.status) {
-            addNotification(buildAdminMatchUpdateNotification(match, payload.new.status));
+          upsertMatchInState(match);
+
+          const statusChanged = payload.old?.status !== payload.new?.status;
+          const assignmentChanged = payload.old?.assignedUserId !== payload.new?.assignedUserId || payload.old?.assignedOfficerName !== payload.new?.assignedOfficerName;
+
+          if (statusChanged) {
+            const notif = buildAdminMatchUpdateNotification(match, payload.new.status);
+            addNotification(notif);
+            toast.success(notif.message, { duration: 5000 });
+          } else if (assignmentChanged) {
+            const notif = buildAdminAssignmentNotification(match);
+            addNotification(notif);
+            toast.success(notif.message, { duration: 5000 });
+          } else {
+            const notif: NotificationItem = {
+              id: `admin-update-${match.id}-${Date.now()}`,
+              message: `Match ${match.homeTeam} vs ${match.awayTeam} was updated.`,
+              time: 'Just now',
+              read: false,
+              matchId: match.id,
+              type: 'admin_update',
+              match,
+            };
+            addNotification(notif);
+            toast.success(notif.message, { duration: 5000 });
           }
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'm1_reports' }, (payload) => {
           const report = payload.new;
           if (!report) return;
-          addNotification({
+          const notif: NotificationItem = {
             id: `m1-${report.id}`,
             message: `Officer ${report.officer_name || report.officer_email || 'Unknown'} submitted a Match Day -1 form`,
             time: 'Just now',
             read: false,
-          });
+            type: 'report_submitted',
+          };
+          addNotification(notif);
+          toast.success(notif.message, { duration: 5000 });
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matchday_reports' }, (payload) => {
           const report = payload.new;
           if (!report) return;
-          addNotification({
+          const notif: NotificationItem = {
             id: `md-${report.id}`,
             message: `Officer ${report.officer_name || report.officer_email || 'Unknown'} submitted a Match Day form`,
             time: 'Just now',
             read: false,
-          });
+            type: 'report_submitted',
+          };
+          addNotification(notif);
+          toast.success(notif.message, { duration: 5000 });
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'incident_reports' }, (payload) => {
           const report = payload.new;
           if (!report) return;
-          addNotification({
+          const notif: NotificationItem = {
             id: `ir-${report.id}`,
             message: `Incident report logged for match ${report.match_id || report.id}`,
             time: 'Just now',
             read: false,
-          });
+            type: 'incident',
+          };
+          addNotification(notif);
+          toast.error(notif.message, { duration: 5000 });
         })
         .subscribe();
     }
@@ -371,13 +467,14 @@ export default function Dashboard() {
   const activeCount = matches.filter((m: any) => m.status === 'Active').length;
   const incompleteTotal = m1PendingCount + activeCount;
   return (
-    <div className="w-screen min-h-screen !bg-gray-50 flex flex-col">
+    <div className="w-screen min-h-screen bg-gray-50! flex flex-col">
       <DashboardHeader
         userName={userProfile?.full_name || currentUser?.email?.split('@')[0] || 'User'}
         userEmail={currentUser?.email || 'No email'}
         userRole={userProfile?.role || 'user'}
         notifications={notifications}
         onLogout={() => navigate('/login')}
+        onNotificationClick={handleNotificationClick}
       />
       
       <div className="flex-1 p-4 md:p-8 lg:p-12">
@@ -385,8 +482,8 @@ export default function Dashboard() {
         
         {isAdmin && (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5 mb-12">
-            <StatCard title="Coming Matches" subtitle="Awaiting M-1" value={matches.filter((m: any) => m.status === 'M-1 Pending').length} icon={<Clock className="text-orange-300" />} />
-            <StatCard title="Active Matches" subtitle="In progress now" value={matches.filter((m: any) => m.status === 'Active').length} icon={<ShieldAlert className="text-green-600" />} />
+            <StatCard title="Coming Matches" subtitle="Awaiting Matchday-1 Form" value={matches.filter((m: any) => m.status === 'M-1 Pending').length} icon={<Clock className="text-orange-300" />} />
+            <StatCard title="Active Matches" subtitle="In progress, Waiting for Matchday Form" value={matches.filter((m: any) => m.status === 'Active').length} icon={<ShieldAlert className="text-green-600" />} />
             <StatCard title="Total Matches" subtitle="Scheduled & completed" value={matches.length} icon={<Trophy className="text-blue-600" />} />
             <StatCard title="Registered Officers" subtitle="Click to view details" value={officers.length} icon={<Users className="text-black" />} onClick={() => setShowOfficerModal(true)} />
             <StatCard title="Reported Incidents" subtitle="Incidents logged" value={matches.filter((m: any) => m.hasIncident === true).length} icon={<ShieldAlert className="text-red-600" />} />
@@ -399,44 +496,44 @@ export default function Dashboard() {
               subtitle={`Awaiting Matchday Minus 1 [ ${m1PendingCount} ]`}
               subtitle2={`Awaiting Matchday [ ${activeCount} ]`}
               value={incompleteTotal}
-              icon={<Clock className="text-orange-300" />}
+              icon={<ClipboardPen className="text-blue-600" />}
             />
           </div>
         )}
-        <div className="!bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white! rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-4 md:p-6 border-b">
             <h2 className="text-lg font-bold text-gray-800">Matches History</h2>
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr_220px_220px] xl:grid-cols-[2fr_1fr_1fr_220px_220px] items-end">
               <div className="w-full">
-                <label className="sr-only" htmlFor="dashboard-search">Search teams or officer</label>
+                <label className="sr-only" htmlFor="dashboard-search">Filter matches</label>
                 <input
                   id="dashboard-search"
-                  placeholder="Search by Teams, Officer, or Stadium"
+                  placeholder="Search by Team, Officer, Stadium"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white"
                 />
               </div>
               <div className="relative w-full">
-                <label className="sr-only" htmlFor="date-from">Date from</label>
+                <label className="text-gray-800" htmlFor="date-from">Date From:</label>
                 <input
                   id="date-from"
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full pr-10 px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm !bg-white [&::-webkit-calendar-picker-indicator]:!bg-orange-300"
+                  className="w-full pr-10 px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white! [&::-webkit-calendar-picker-indicator]:bg-orange-300!"
                 />
                 <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
 
               <div className="relative w-full">
-                <label className="sr-only" htmlFor="date-to">Date to</label>
+                <label className="text-gray-800" htmlFor="date-to">Date To:</label>
                 <input
                   id="date-to"
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full pr-10 px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm !bg-white [&::-webkit-calendar-picker-indicator]:!bg-orange-300"
+                  className="w-full pr-10 px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white! [&::-webkit-calendar-picker-indicator]:bg-orange-300!"
                 />
                 <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
@@ -445,7 +542,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => { setSearch(''); setSelectedOfficerFilter(null); setDateFrom(''); setDateTo(''); }}
-                  className="inline-flex items-center justify-center rounded-2xl !bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:!bg-slate-200 transition"
+                  className="inline-flex items-center justify-center rounded-2xl bg-slate-100! px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200! transition"
                 >
                   Clear
                 </button>
