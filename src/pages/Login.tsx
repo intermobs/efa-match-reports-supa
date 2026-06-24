@@ -41,7 +41,7 @@ export default function Login() {
       <div className="w-full max-w-[400px] !bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
         <div className="text-center mb-8">
           <div className="w-12 h-12 !bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-blue-200 shadow-lg">
-            <img src="/safety_logo.png" className="w-12 h-12" />
+            <img src="/efa_logo.png" className="w-12 h-12" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Welcome</h2>
           <p className="text-gray-500 text-sm">Sign in to access your security portal</p>
