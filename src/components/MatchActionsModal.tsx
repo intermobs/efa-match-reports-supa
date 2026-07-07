@@ -45,24 +45,52 @@ export default function MatchActionsModal({ match, onClose, onEdit, onView, avai
                   <div className={enabled ? 'text-blue-600' : 'text-gray-400'}>{f.icon}</div>
                   <span className={`text-sm font-semibold ${enabled ? 'text-gray-700' : 'text-gray-400'}`}>{f.label}</span>
                 </div>
-                <div className="flex gap-1">
-                  <button 
+                <div className="flex gap-4">
+                {/* --- View Report Group --- */}
+                <div className="flex flex-col items-center gap-1">
+                  <button
                     onClick={() => reportExists && onView(match, f.id, f.label)}
                     disabled={!reportExists}
                     title={reportExists ? 'View report' : 'No report available'}
-                    className={`p-1.5 rounded transition-colors ${reportExists ? 'hover:!bg-blue-100 text-blue-600 cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
+                    className={`p-2 rounded transition-colors ${
+                      reportExists
+                        ? 'hover:!bg-blue-100 text-blue-600 cursor-pointer'
+                        : 'text-gray-300 cursor-not-allowed'
+                    }`}
                   >
-                    <Eye size={18} />
+                    <Eye size={20} />
                   </button>
-                  <button 
+                  <span
+                    className={`text-xs font-medium ${
+                      reportExists ? 'text-blue-700' : 'text-gray-400'
+                    }`}
+                  >
+                    View
+                  </span>
+                </div>
+                {/* --- Edit Form Group --- */}
+                <div className="flex flex-col items-center gap-1">
+                  <button
                     onClick={() => enabled && onEdit(match, f.path)}
                     disabled={!enabled}
                     title={enabled ? 'Edit form' : 'Form not available in current status'}
-                    className={`p-1.5 rounded transition-colors ${enabled ? 'hover:!bg-indigo-100 text-indigo-600 cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
+                    className={`p-2 rounded transition-colors ${
+                      enabled
+                        ? 'hover:!bg-indigo-100 text-indigo-600 cursor-pointer'
+                        : 'text-gray-300 cursor-not-allowed'
+                    }`}
                   >
-                    <Edit2 size={18} />
-                  </button>             
+                    <Edit2 size={20} />
+                  </button>
+                  <span
+                    className={`text-xs font-medium ${
+                      enabled ? 'text-indigo-700' : 'text-gray-400'
+                    }`}
+                  >
+                    Fill/Edit
+                  </span>
                 </div>
+              </div>
               </div>
             );
           })}
