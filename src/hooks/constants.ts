@@ -178,10 +178,10 @@ export const LEAGUES = [
 ];
 
 export const VENUES = [
-  { value: 'hhohho', label: 'Hhohho' },
-  { value: 'lubombo', label: 'Lubombo' },
-  { value: 'manzini', label: 'Manzini' },
-  { value: 'shiselweni', label: 'Shiselweni' }
+  { value: 'Hhohho', label: 'Hhohho' },
+  { value: 'Lubombo', label: 'Lubombo' },
+  { value: 'Manzini', label: 'Manzini' },
+  { value: 'Shiselweni', label: 'Shiselweni' }
 ];
 
 export const FIELD_LABELS: Record<string, string> = {
@@ -212,6 +212,9 @@ export const FIELD_LABELS: Record<string, string> = {
   incident_photo_url: 'Incident Photo',
   overall_evaluation: 'Overall evaluation',
   issues_description: 'Issues or concerns',
+  what_happened: 'What Happened',
+  actions_taken: 'Actions taken to resolve the incident',
+  additional_info: 'Additional information',
   
 };
 
