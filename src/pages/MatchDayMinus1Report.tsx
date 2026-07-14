@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,20 +34,66 @@ export default function MatchDayMinus1Report() {
   const navigate = useNavigate();
   const { matchData: match } = location.state || {};
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      officerName: match?.assignedOfficerName || 'Unassigned',
-      date: match?.date || new Date().toISOString().split('T')[0],
-      homeTeam: match?.homeTeam || '',
-      awayTeam: match?.awayTeam || '',
-      stadium: match?.stadium || '',
-      venue: match?.venue || '',
-      tournament: match?.tournament || '',
-      league: match?.league || '',
-      expectedAttendance: 0,
-    }
+  const buildDefaultValues = (report?: any) => ({
+    officerName: report?.officer_name || match?.assignedOfficerName || 'Unassigned',
+    date: report?.date || match?.date || new Date().toISOString().split('T')[0],
+    homeTeam: report?.home_team || match?.homeTeam || '',
+    awayTeam: report?.away_team || match?.awayTeam || '',
+    stadium: report?.stadium || match?.stadium || '',
+    venue: report?.venue || match?.venue || '',
+    tournament: report?.tournament || match?.tournament || '',
+    league: report?.league || match?.league || '',
+    expectedAttendance: report?.expected_attendance ?? undefined,
+    venueMeeting: report?.venue_meeting || '',
+    stewardsBriefing: report?.stewards_briefing || '',
+    control_measures: report?.control_measures || '',
+    matchCoordination: report?.match_coordination || '',
+    teamTrainings: report?.team_trainings || '',
+    vocCommanderCooperation: report?.voc_commander_cooperation || '',
+    stadiumAuthorityCooperation: report?.stadium_authority_cooperation || '',
+    pleDelegationCooperation: report?.ple_delegation_cooperation || '',
+    overallEvaluation: report?.overall_evaluation || '',
+    issuesDescription: report?.issues_description || '',
   });
+
+  const [hasExistingData, setHasExistingData] = useState(false);
+
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: buildDefaultValues(),
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrateExistingReport = async () => {
+      if (!match?.id) return;
+
+      const { data: existingReport, error } = await supabase
+        .from('m1_reports')
+        .select('*')
+        .eq('match_id', match.id)
+        .maybeSingle();
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error('Error loading existing Match Day -1 report:', error);
+        setHasExistingData(false);
+        reset(buildDefaultValues());
+        return;
+      }
+
+      setHasExistingData(Boolean(existingReport));
+      reset(buildDefaultValues(existingReport));
+    };
+
+    hydrateExistingReport();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [match?.id, reset]);
 
   const onSubmit = async (data: FormData) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -179,7 +226,7 @@ export default function MatchDayMinus1Report() {
           
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-end">
               <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-300 !bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:!bg-slate-100">Save draft</button>
-              <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-2xl !bg-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:!bg-sky-700 disabled:cursor-not-allowed disabled:!bg-slate-400">{isSubmitting ? 'Submitting...' : 'Submit report'}</button>
+              <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-2xl !bg-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:!bg-sky-700 disabled:cursor-not-allowed disabled:!bg-slate-400">{isSubmitting ? (hasExistingData ? 'Updating...' : 'Submitting...') : (hasExistingData ? 'Update' : 'Submit report')}</button>
             </div>
           
         </form>
