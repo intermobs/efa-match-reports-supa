@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'; // Added useState
-import { useForm} from 'react-hook-form';
+import { useCallback, useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Upload } from 'lucide-react';
-import { supabase } from '../lib/supabase'; // Use Supabase
+import { supabase } from '../lib/supabase';
 
 const schema = z.object({
   matchDate: z.string().min(1, 'Required'),
@@ -21,66 +21,80 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+type ExistingReport = Record<string, unknown>;
 
 export default function IncidentReport() {
-  const [file, setFile] = useState<File | null>(null); // THIS IS MANDATORY
+  const [file, setFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [existingPhotoPath, setExistingPhotoPath] = useState<string | null>(null);
+  const [hasExistingData, setHasExistingData] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { matchData: match, mode } = location.state || {}; // Extract mode
+  const { matchData: match, mode } = location.state || {};
   const isViewOnly = mode === 'view';
 
-  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm({
+  const buildDefaultValues = useCallback((report?: ExistingReport): FormData => ({
+    matchDate: (report?.match_date as string | undefined) || match?.date || new Date().toISOString().split('T')[0],
+    matchNo: (report?.match_no as string | undefined) || '',
+    kickOff: (report?.kick_off as string | undefined) || '',
+    homeTeam: (report?.home_team as string | undefined) || match?.homeTeam || '',
+    awayTeam: (report?.away_team as string | undefined) || match?.awayTeam || '',
+    venue: (report?.venue as string | undefined) || match?.venue || '',
+    stadium: (report?.stadium as string | undefined) || match?.stadium || '',
+    incidentLocation: (report?.incident_location as string | undefined) || '',
+    whatHappened: (report?.what_happened as string | undefined) || '',
+    actionsTaken: (report?.actions_taken as string | undefined) || '',
+    additionalInfo: (report?.additional_info as string | undefined) || '',
+  }), [match?.date, match?.homeTeam, match?.awayTeam, match?.venue, match?.stadium]);
+
+  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      matchDate: match?.date || new Date().toISOString().split('T')[0],
-      homeTeam: match?.homeTeam || '',
-      awayTeam: match?.awayTeam || '',
-      stadium: match?.stadium || '',
-      venue: match?.venue || '',
-    }
+    defaultValues: buildDefaultValues(),
   });
 
-  // Sync with Dashboard data
-  useEffect(() => { if (match) reset({ ...match, matchDate: match.date }); }, [match, reset]);
-
-  // Load existing report data if in view mode
   useEffect(() => {
-    if (isViewOnly && match?.id) {
-      const loadReportData = async () => {
-        try {
-          const { data: report, error } = await supabase
-            .from('incident_reports')
-            .select('*')
-            .eq('id', `IR-${match.id}`)
-            .maybeSingle();
+    let isMounted = true;
 
-          if (error) throw error;
-          if (report) {
-            reset({
-              matchDate: report.match_date,
-              matchNo: report.match_no,
-              kickOff: report.kick_off,
-              homeTeam: report.home_team,
-              awayTeam: report.away_team,
-              venue: report.venue,
-              stadium: report.stadium,
-              incidentLocation: report.incident_location,
-              whatHappened: report.what_happened,
-              actionsTaken: report.actions_taken,
-              additionalInfo: report.additional_info,
-            });
-            if (report.incident_photo_url) {
-              setImagePreview(supabase.storage.from('incident-photos').getPublicUrl(report.incident_photo_url).data.publicUrl);
-            }
-          }
-        } catch (error) {
-          console.error('Error loading report data:', error);
+    const loadReportData = async () => {
+      if (!match?.id) return;
+
+      const { data: report, error } = await supabase
+        .from('incident_reports')
+        .select('*')
+        .eq('match_id', match.id)
+        .maybeSingle();
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error('Error loading report data:', error);
+        setHasExistingData(false);
+        reset(buildDefaultValues());
+        return;
+      }
+
+      if (report) {
+        setHasExistingData(true);
+        setExistingPhotoPath(report.incident_photo_url || null);
+        reset(buildDefaultValues(report));
+        if (report.incident_photo_url) {
+          setImagePreview(
+            supabase.storage.from('incident-photos').getPublicUrl(report.incident_photo_url).data.publicUrl
+          );
         }
-      };
-      loadReportData();
-    }
-  }, [isViewOnly, match?.id, reset]);
+      } else {
+        setHasExistingData(false);
+        setExistingPhotoPath(null);
+        reset(buildDefaultValues());
+      }
+    };
+
+    loadReportData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [match?.id, reset, buildDefaultValues]);
   
   const onSubmit = async (data: FormData) => {
     // 1. Get user from Supabase Auth
@@ -90,7 +104,7 @@ export default function IncidentReport() {
 
     try {
       // 2. Handle file upload if present
-      let imageUrl = null;
+      let imageUrl = existingPhotoPath;
       if (file) {
         const fileExt = file.name.split('.').pop();
         const fileName = `incident-${match.id}-${Date.now()}.${fileExt}`;
@@ -127,9 +141,10 @@ export default function IncidentReport() {
 
       alert('Successfully saved Incident Report!');
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert('Error saving data: ' + error.message);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert('Error saving data: ' + message);
     }
   };
   
@@ -156,7 +171,7 @@ export default function IncidentReport() {
           <section className="rounded-3xl border border-slate-200 !bg-slate-50 p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Incident Details</h2>
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <Input label="Match Date" type="date" {...register('matchDate')} error={errors.matchDate} disabled={isViewOnly || !!match} />
+              <Input label="Match Date" type="date" {...register('matchDate')} error={errors.matchDate} disabled={isViewOnly} />
               <Input label="Match Number" {...register('matchNo')} error={errors.matchNo} disabled={isViewOnly} />
               <Input label="Kick-off time" type="time" {...register('kickOff')} error={errors.kickOff} disabled={isViewOnly} />
               <SummaryBadge label="Home Team" value={match?.homeTeam || 'Unknown'} />
@@ -212,7 +227,7 @@ export default function IncidentReport() {
               <>
                 <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-300 !bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:!bg-slate-100">Save Draft</button>
                 <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-2xl !bg-red-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/20 transition hover:!bg-red-800">
-                  {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                  {isSubmitting ? (hasExistingData ? 'Updating...' : 'Submitting...') : (hasExistingData ? 'Update' : 'Submit Report')}
                 </button>
               </>
             )}
@@ -232,7 +247,13 @@ function SummaryBadge({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Input({ label, error, disabled, ...props }: any) {
+type FormFieldProps = {
+  label: string;
+  error?: { message?: string };
+  disabled?: boolean;
+};
+
+function Input({ label, error, disabled, ...props }: FormFieldProps & React.ComponentProps<'input'>) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -242,7 +263,7 @@ function Input({ label, error, disabled, ...props }: any) {
   );
 }
 
-function TextArea({ label, error, disabled, ...props }: any) {
+function TextArea({ label, error, disabled, ...props }: FormFieldProps & React.ComponentProps<'textarea'>) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
