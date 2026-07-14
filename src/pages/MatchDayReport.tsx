@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,29 +32,79 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+type ExistingReport = Record<string, unknown>;
 
 export default function MatchDayReport() {
   const location = useLocation();
   const navigate = useNavigate();
   const { matchData: match } = location.state || {}; // Extract match data
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+
+  const buildDefaultValues = useCallback((report?: ExistingReport): FormData => ({
+    officerName: (report?.officer_name as string | undefined) || match?.assignedOfficerName || 'Unassigned',
+    date: (report?.date as string | undefined) || match?.date || new Date().toISOString().split('T')[0],
+    homeTeam: (report?.home_team as string | undefined) || match?.homeTeam || '',
+    awayTeam: (report?.away_team as string | undefined) || match?.awayTeam || '',
+    stadium: (report?.stadium as string | undefined) || match?.stadium || '',
+    venue: (report?.venue as string | undefined) || match?.venue || '',
+    tournament: (report?.tournament as string | undefined) || match?.tournament || '',
+    league: (report?.league as string | undefined) || match?.league || '',
+    homeScore: (report?.home_score as number | undefined) ?? 0,
+    awayScore: (report?.away_score as number | undefined) ?? 0,
+    attendance: (report?.attendance as number | undefined) ?? 0,
+    accessControl: (report?.access_control as string | undefined) || '',
+    staircases: (report?.staircases as string | undefined) || '',
+    supporterBehavior: (report?.supporter_behavior as string | undefined) || '',
+    officialBehavior: (report?.official_behavior as string | undefined) || '',
+    vocInteraction: (report?.voc_interaction as string | undefined) || '',
+    stadiumCleanliness: (report?.stadium_cleanliness as string | undefined) || '',
+    securityDebrief: (report?.security_debrief as string | undefined) || '',
+    locCooperation: (report?.loc_cooperation as string | undefined) || '',
+    stadiumAuthority: (report?.stadium_authority as string | undefined) || '',
+    pleDelegation: (report?.ple_delegation as string | undefined) || '',
+    overallEvaluation: (report?.overall_evaluation as string | undefined) || '',
+    issuesDescription: (report?.issues_description as string | undefined) || '',
+  }), [match?.assignedOfficerName, match?.date, match?.homeTeam, match?.awayTeam, match?.stadium, match?.venue, match?.tournament, match?.league]);
+
+  const [hasExistingData, setHasExistingData] = useState(false);
+
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      officerName: match?.assignedOfficerName || 'Unassigned',
-      date: match?.date || new Date().toISOString().split('T')[0],
-      homeTeam: match?.homeTeam || '',
-      awayTeam: match?.awayTeam || '',
-      stadium: match?.stadium || '',
-      venue: match?.venue || '',
-      tournament: match?.tournament || '',
-      league: match?.league || '',
-      homeScore: 0,
-      awayScore: 0,
-      attendance: 0
-    }
+    defaultValues: buildDefaultValues(),
   });
 
-  const onSubmit = async (data: any) => {
+  useEffect(() => {
+    let isMounted = true;
+
+    const hydrateExistingReport = async () => {
+      if (!match?.id) return;
+
+      const { data: existingReport, error } = await supabase
+        .from('matchday_reports')
+        .select('*')
+        .eq('match_id', match.id)
+        .maybeSingle();
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error('Error loading existing Match Day report:', error);
+        setHasExistingData(false);
+        reset(buildDefaultValues());
+        return;
+      }
+
+      setHasExistingData(Boolean(existingReport));
+      reset(buildDefaultValues(existingReport));
+    };
+
+    hydrateExistingReport();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [match?.id, reset, buildDefaultValues]);
+
+  const onSubmit = async (data: FormData) => {
     // 1. Get user from Supabase Auth
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("You must be logged in.");
@@ -105,9 +156,10 @@ export default function MatchDayReport() {
 
       alert('Successfully saved Match Day Report!');
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert('Error saving data: ' + error.message);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert('Error saving data: ' + message);
     }
   };
 
@@ -196,7 +248,7 @@ export default function MatchDayReport() {
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-end">
               <button type="button" className="inline-flex items-center justify-center rounded-2xl border border-slate-300 !bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:!bg-slate-100">Save draft</button>
-              <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-2xl !bg-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:!bg-sky-700 disabled:cursor-not-allowed disabled:!bg-slate-400">{isSubmitting ? 'Submitting...' : 'Submit report'}</button>
+              <button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center rounded-2xl !bg-sky-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:!bg-sky-700 disabled:cursor-not-allowed disabled:!bg-slate-400">{isSubmitting ? (hasExistingData ? 'Updating...' : 'Submitting...') : (hasExistingData ? 'Update' : 'Submit report')}</button>
             </div>
           </form>
         </div>
