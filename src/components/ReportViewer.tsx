@@ -1,9 +1,11 @@
-import { X, Printer } from 'lucide-react';
+import { X, Printer, SquarePen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { FIELD_LABELS, FIELD_ORDERS } from '../hooks/constants';
 import { printReport } from '../utils/printReport';
 
 export function ReportViewer({ data, onClose, title, match }: any) {
+  const navigate = useNavigate();
   const isM1 = /m-1|m1/i.test(title);
   const isDay = /match day report|md-/i.test(title);
   const isIncident = /incident/i.test(title);
@@ -17,6 +19,18 @@ export function ReportViewer({ data, onClose, title, match }: any) {
   };
 
   const headerTitle = getHeaderTitle(title);
+
+  const getFormPath = () => {
+    if (isIncident) return '/incident-report';
+    if (isM1) return '/match-day-minus1';
+    if (isDay) return '/match-day';
+    return '/dashboard';
+  };
+
+  const handleEdit = () => {
+    onClose?.();
+    navigate(getFormPath(), { state: { matchData: match } });
+  };
 
   const orderKey = isM1 ? 'm1' : isDay ? 'day' : isIncident ? 'incident' : null;
   const order = orderKey ? FIELD_ORDERS[orderKey as keyof typeof FIELD_ORDERS] : [];
@@ -107,13 +121,19 @@ export function ReportViewer({ data, onClose, title, match }: any) {
         <div className="mt-8 flex gap-3">
           <button onClick={onClose} className="flex-1 !bg-gray-100 text-gray-700 py-2 rounded-lg font-bold">Close</button>
           <button
+            onClick={handleEdit}
+            className="px-6 py-2 !bg-green-600 text-white font-semibold rounded-lg hover:!bg-green-700 transition flex items-center gap-2 disabled:!bg-gray-400 disabled:cursor-not-allowed"
+          >
+            <SquarePen size={18} /> Edit
+          </button>
+          <button
             onClick={() => {
               const fileName = `${match.homeTeam || 'Home'} vs ${match.awayTeam || 'Away'} - ${headerTitle}`;
               printReport(fileName, 'printable-area');
             }} 
             className="px-6 py-2 !bg-blue-600 text-white font-semibold rounded-lg hover:!bg-blue-700 transition flex items-center gap-2 disabled:!bg-gray-400 disabled:cursor-not-allowed"
           >
-            <Printer size={18} /> Print Report
+            <Printer size={18} /> Print
           </button>
 
         </div>
