@@ -6,9 +6,10 @@ import { printReport } from '../utils/printReport';
 
 export function ReportViewer({ data, onClose, title, match }: any) {
   const navigate = useNavigate();
-  const isM1 = /m-1|m1/i.test(title);
-  const isDay = /match day report|md-/i.test(title);
-  const isIncident = /incident/i.test(title);
+  const normalizedTitle = (title || '').toLowerCase();
+  const isM1 = /m-1|m1|minus\s*1/i.test(normalizedTitle);
+  const isDay = /matchday|match day|md-|\bday\b/i.test(normalizedTitle);
+  const isIncident = /incident/i.test(normalizedTitle);
   // 1. Precise Title Logic
   const getHeaderTitle = (t: string) => {
     const val = t.toLowerCase();
