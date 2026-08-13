@@ -21,7 +21,7 @@ function Home() {
           <span>EFA Safety & Security Portal</span>
         </div>
         <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8">
-          Streamlining <span className="text-blue-600">Match Security</span> Reporting
+          Safety <span className="text-blue-600">Security</span> Safeguarding
         </h1>
         <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
           The official digital workspace for Safety & Security officers. 
