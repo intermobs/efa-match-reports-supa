@@ -64,7 +64,7 @@ export default function Register() {
         
         <div className="text-center mb-8">
           <div className="w-12 h-12 !bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-blue-200 shadow-lg">
-            <img src="/safety_logo.png" className="w-12 h-12" />
+            <img src="/efa_logo.png" className="w-12 h-12" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Create Account</h2>
         </div>
@@ -109,3 +109,4 @@ export default function Register() {
     </div>
   );
 }
+
