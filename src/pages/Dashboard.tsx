@@ -2,7 +2,7 @@
 /* @ts-nocheck */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar, ClipboardPen} from 'lucide-react';
+import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar, ClipboardPen, RefreshCcw } from 'lucide-react';
 import { db, getCurrentUser } from '../lib/supabase';
 import Select from 'react-select';
 import toast from 'react-hot-toast';
@@ -50,6 +50,7 @@ export default function Dashboard() {
   const [dateTo, setDateTo] = useState<string>('');
   const [availableReports, setAvailableReports] = useState<{ [key: string]: boolean }>({});
   const itemsPerPage = 10;
+  const hasActiveFilters = Boolean(search || selectedOfficerFilter || dateFrom || dateTo);
 
   const handleNavigateToForm = (match: any, path: string) => {
     setSelectedMatch(null);
@@ -500,57 +501,19 @@ export default function Dashboard() {
             />
           </div>
         )}
-        <div className="bg-white! rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-4 md:p-6 border-b">
-            <h2 className="text-lg font-bold text-gray-800">Matches History</h2>
-            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr_220px_220px] xl:grid-cols-[2fr_1fr_1fr_220px_220px] items-end">
-              <div className="w-full">
-                <label className="sr-only" htmlFor="dashboard-search">Filter matches</label>
-                <input
-                  id="dashboard-search"
-                  placeholder="Search by Team, Officer, Stadium"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white"
-                />
-              </div>
-              <div className="relative w-full">
-                <label className="text-gray-800" htmlFor="date-from">Date From:</label>
-                <input
-                  id="date-from"
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full pr-10 px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white! [&::-webkit-calendar-picker-indicator]:bg-orange-300!"
-                />
-                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <div className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+          <div className="border-b border-slate-200 bg-slate-50/80 p-4 md:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Overview</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900">Matches History</h2>
               </div>
 
-              <div className="relative w-full">
-                <label className="text-gray-800" htmlFor="date-to">Date To:</label>
-                <input
-                  id="date-to"
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full pr-10 px-4 py-2 border border-gray-200 rounded-2xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm bg-white! [&::-webkit-calendar-picker-indicator]:bg-orange-300!"
-                />
-                <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              </div>
-
-              <div className="flex flex-wrap gap-3 justify-end">
-                <button
-                  type="button"
-                  onClick={() => { setSearch(''); setSelectedOfficerFilter(null); setDateFrom(''); setDateTo(''); }}
-                  className="inline-flex items-center justify-center rounded-2xl bg-slate-100! px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200! transition"
-                >
-                  Clear
-                </button>
-
+              <div className="flex flex-wrap items-center gap-2">
                 {isAdmin && (
                   <button
                     onClick={() => setShowAddForm(!showAddForm)}
-                    className={`inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-semibold text-white transition ${
+                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold text-white transition ${
                       showAddForm
                         ? '!bg-red-600 hover:!bg-red-700'
                         : '!bg-blue-600 hover:!bg-blue-700'
@@ -562,43 +525,112 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[1.7fr_1fr_1fr] items-end">
+              <div className="w-full">
+                <label className="mb-1.5 block text-xs font-medium text-slate-600" htmlFor="dashboard-search">Search</label>
+                <div className="relative">
+                  <input
+                    id="dashboard-search"
+                    placeholder="Search by Team, Officer, Stadium"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-11 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  />
+                  <button
+                    type="button"
+                    aria-label={hasActiveFilters ? 'Clear filters' : 'No filters to clear'}
+                    disabled={!hasActiveFilters}
+                    onClick={() => {
+                      setSearch('');
+                      setSelectedOfficerFilter(null);
+                      setDateFrom('');
+                      setDateTo('');
+                    }}
+                    className={`absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border transition ${
+                      hasActiveFilters
+                        ? 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-800'
+                        : 'cursor-not-allowed border-slate-100 bg-white text-slate-300'
+                    }`}
+                    title={hasActiveFilters ? 'Clear filters' : 'No filters to clear'} >
+                    {hasActiveFilters ? (
+                      <RefreshCcw  size={16} strokeWidth={2} className="shrink-0" />
+                    ) : (
+                      <X size={16} strokeWidth={2} className="shrink-0" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className="relative w-full">
+                <label className="mb-1.5 block text-xs font-medium text-slate-600" htmlFor="date-from">Date from</label>
+                <input
+                  id="date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white! px-3.5 py-2.5 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 [&::-webkit-calendar-picker-indicator]:bg-slate-400! :cursor-pointer"
+                />
+                <Calendar className="pointer-events-none absolute right-3 top-[42px] h-4 w-4 text-slate-400" />
+              </div>
+
+              <div className="relative w-full">
+                <label className="mb-1.5 block text-xs font-medium text-slate-600" htmlFor="date-to">Date to</label>
+                <input
+                  id="date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white! px-3.5 py-2.5 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 [&::-webkit-calendar-picker-indicator]:bg-slate-400! :cursor-pointer"
+                />
+                <Calendar className="pointer-events-none absolute right-3 top-[42px] h-4 w-4 text-slate-400" />
+              </div>
+            </div>
           </div>
+
           {showAddForm && isAdmin && <AddMatchForm onAdd={() => { setShowAddForm(false); fetchMatches(userProfile, currentUser); }} officers={officers} />}
-          {loading ? <p className="p-12 text-center">Loading...</p> : (
-            <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
-              
+
+          {loading ? <p className="p-12 text-center text-slate-500">Loading...</p> : (
+            <div className="max-h-[500px] overflow-y-auto">
               {paginatedMatches.map((match: any) => (
-                <div 
-                  key={match.id} 
-                  className="p-4 md:p-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 hover:!bg-gray-50 cursor-pointer transition border-b md:border-b-0"
+                <div
+                  key={match.id}
+                  className="group flex cursor-pointer flex-col gap-3 border-b border-slate-200 p-4 transition hover:bg-slate-50 md:flex-row md:items-center md:justify-between md:p-5"
                   onClick={() => {
                     setSelectedMatch(match);
                     checkAvailableReports(match);
                   }}
                 >
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 truncate">{match.homeTeam} vs {match.awayTeam}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{match.date} • {match.stadium}</p>
-                    <span className="inline-block mt-2 px-2 py-0.5 !bg-gray-100 rounded text-xs text-gray-600 font-medium">
-                        Assigned: {match.assignedOfficerName || 'Unassigned'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                    <div className="flex flex-wrap gap-2 items-center">
-                      {/* Status Pill */}
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        match.status === 'Active' ? '!bg-blue-100 text-blue-700' : 
-                        match.status === 'Completed' ? '!bg-green-100 text-green-700' : '!bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {match.status}
-                      </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate text-base font-bold text-slate-900">{match.homeTeam} vs {match.awayTeam}</h3>
                       {match.hasIncident && (
-                        <span className="px-3 py-1 rounded-full text-xs font-bold !bg-red-100 text-red-700">
+                        <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-red-700">
                           Incident
                         </span>
                       )}
-                    </div><div> </div>           
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                      <span>{match.date}</span>
+                      <span className="hidden h-1 w-1 rounded-full bg-slate-300 md:inline-block" />
+                      <span>{match.stadium}</span>
+                    </div>
+
+                    <div className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                      Assigned: {match.assignedOfficerName || 'Unassigned'}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 md:min-w-[180px] md:justify-end">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      match.status === 'Active'
+                        ? 'bg-blue-100 text-blue-700'
+                        : match.status === 'Completed'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {match.status}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -699,7 +731,7 @@ function AddMatchForm({ onAdd, officers }: { onAdd: () => void, officers: any[] 
       type="date" 
       className="p-2 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
       [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer 
-      [&::-webkit-calendar-picker-indicator]:!bg-orange-300 [&::-webkit-calendar-picker-indicator]:font-white"
+      [&::-webkit-calendar-picker-indicator]:!bg-blue-900 [&::-webkit-calendar-picker-indicator]:font-white"
        
       onChange={e => setData({...data, date: e.target.value})} 
     />
