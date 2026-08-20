@@ -72,7 +72,7 @@ export default function DashboardHeader({
           {/* Left Section - Logo & Title */}
           <div className="shrink-0 flex items-center gap-3">
             <div className="w-14 h-14 bg-white! rounded-full flex items-center justify-center shadow-inner">
-             <img src="/safety_logo.png" className="w-12 h-12" />
+             <img src="/efa_logo.png" className="w-12 h-12" />
             </div>
             <div className="hidden sm:block">               
               <h1 className="text-2xl font-bold text-blue-900">Command Center</h1>
