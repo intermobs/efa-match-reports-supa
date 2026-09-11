@@ -3,6 +3,13 @@ import { ArrowLeft, Building2, ChevronRight, Layers3, Settings, ShieldCheck, Tro
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/DashboardHeader';
 import { db, getCurrentUser } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
+
+interface UserProfile {
+  full_name?: string | null;
+  role?: string | null;
+  region?: string | null;
+}
 
 const managementAreas = [
   {
@@ -33,8 +40,8 @@ const accentStyles = {
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -142,7 +149,7 @@ export default function SettingsPage() {
               <Building2 size={19} />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">More settings here</h2>
+              <h2 className="font-bold text-slate-900">More settings can live here</h2>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
                 This workspace is intentionally prepared for future admin tools such as venues, competition seasons, match statuses, and reporting options.
               </p>
