@@ -1,14 +1,16 @@
 /* eslint-disable */
 /* @ts-nocheck */
 import { useState, useRef, useEffect } from 'react';
-import { Bell, User, LogOut, Menu, X, AlertCircle } from 'lucide-react';
-import { signOut } from '../lib/supabase';
+import { Bell, User, LogOut, Menu, X, AlertCircle, Save, Settings } from 'lucide-react';
+import { signOut, updateUserProfile } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
   userName: string;
   userEmail: string;
   userRole: string;
+  userId?: string;
+  userRegion?: string;
   notifications: {
     id: string;
     message: string;
@@ -19,20 +21,29 @@ interface DashboardHeaderProps {
   }[];
   onLogout?: () => void;
   onNotificationClick?: (notification: any) => void;
+  onProfileSaved?: (profile: { full_name: string; region: string }) => void;
 }
 
 export default function DashboardHeader({ 
   userName, 
   userEmail, 
   userRole,
+  userId,
+  userRegion = '',
   notifications,
   onLogout,
-  onNotificationClick
+  onNotificationClick,
+  onProfileSaved
 }: DashboardHeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showViewAllModal, setShowViewAllModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileName, setProfileName] = useState(userName);
+  const [profileRegion, setProfileRegion] = useState(userRegion);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -61,6 +72,33 @@ export default function DashboardHeader({
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
+    }
+  };
+
+  const openProfile = () => {
+    setProfileName(userName);
+    setProfileRegion(userRegion);
+    setProfileError('');
+    setShowProfileModal(true);
+    setShowUserMenu(false);
+    setShowMobileMenu(false);
+  };
+
+  const handleProfileSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!userId || !profileName.trim()) return;
+
+    setProfileSaving(true);
+    setProfileError('');
+    try {
+      const profile = { full_name: profileName.trim(), region: profileRegion.trim() };
+      await updateUserProfile(userId, profile);
+      onProfileSaved?.(profile);
+      setShowProfileModal(false);
+    } catch (error: any) {
+      setProfileError(error?.message || 'Unable to save profile.');
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -225,11 +263,27 @@ export default function DashboardHeader({
                   </div>
 
                   <div className="p-2">
-                    <div className="px-3 py-2 rounded hover:!bg-gray-50 cursor-pointer transition-colors">
+                    <button type="button" onClick={openProfile} className="w-full text-left px-3 py-2 rounded hover:!bg-gray-50 cursor-pointer transition-colors">
                       <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Account</p>
                       <p className="text-sm text-gray-700 mt-1">{userRole.toUpperCase()}</p>
-                    </div>
+                    </button>
                   </div>
+
+                  {userRole === 'admin' && (
+                    <div className="border-t border-gray-100 p-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          navigate('/settings');
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:!bg-gray-50"
+                      >
+                        <Settings size={16} />
+                        Settings
+                      </button>
+                    </div>
+                  )}
 
                   <div className="p-2 border-t border-gray-100">
                     <button
@@ -243,18 +297,15 @@ export default function DashboardHeader({
                 </div>
               )}
             </div>
-
             {/* Mobile Menu Button */}
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="sm:hidden p-2 text-gray-600 hover:!bg-gray-100 rounded-lg transition-colors"
-              aria-label="Toggle menu"
-            >
+              aria-label="Toggle menu" >
               {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
-
         {/* Mobile Menu */}
         {showMobileMenu && (
           <div className="sm:hidden border-t border-gray-200 py-4 px-2 !bg-gray-50">
@@ -274,8 +325,26 @@ export default function DashboardHeader({
                   </div>
                 </div>
               </div>
-
               {/* Mobile Notifications Link */}
+              <button
+                onClick={openProfile}
+                className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:!bg-gray-200 rounded-lg transition-colors text-sm font-medium"
+              >
+                <User size={18} />
+                <span>Account</span>
+              </button>
+              {userRole === 'admin' && (
+                <button
+                  onClick={() => {
+                    navigate('/settings');
+                    setShowMobileMenu(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-gray-700 hover:!bg-gray-200 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <Settings size={18} />
+                  <span>Settings</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowNotifications(true);
@@ -288,10 +357,8 @@ export default function DashboardHeader({
                 {unreadCount > 0 && (
                   <span className="ml-auto w-5 h-5 !bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                     {unreadCount}
-                  </span>
-                )}
+                  </span> )}
               </button>
-
               {/* Mobile Logout */}
               <button
                 onClick={() => {
@@ -307,6 +374,48 @@ export default function DashboardHeader({
           </div>
         )}
       </div>
+
+      {showProfileModal && (
+        <div className="fixed inset-0 !bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleProfileSave} className="!bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-100">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Account</h2>
+                <p className="text-sm text-gray-600 mt-1">Your profile details</p>
+              </div>
+              <button type="button" onClick={() => setShowProfileModal(false)} className="p-2 text-gray-500 hover:text-gray-700 hover:!bg-gray-100 rounded-full transition" aria-label="Close profile">
+                <X size={22} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <label className="block">
+                <span className="text-sm font-semibold text-gray-700">Full name</span>
+                <input value={profileName} onChange={(event) => setProfileName(event.target.value)} className="mt-1 w-full !bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-gray-700">Email</span>
+                <input value={userEmail} readOnly className="mt-1 w-full !bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-gray-500" />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-gray-700">Region</span>
+                <input value={profileRegion} onChange={(event) => setProfileRegion(event.target.value)} className="mt-1 w-full !bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </label>
+              <label className="block">
+                <span className="text-sm font-semibold text-gray-700">Role</span>
+                <input value={userRole.toUpperCase()} readOnly className="mt-1 w-full !bg-gray-100 border border-gray-200 rounded-xl px-3 py-2.5 text-gray-500" />
+              </label>
+              {profileError && <p className="text-sm text-red-600">{profileError}</p>}
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-100">
+              <button type="button" onClick={() => setShowProfileModal(false)} className="px-4 py-2 rounded-lg text-gray-700 hover:!bg-gray-100 font-medium">Cancel</button>
+              <button type="submit" disabled={profileSaving || !profileName.trim()} className="flex items-center gap-2 px-4 py-2 rounded-lg !bg-blue-600 text-white hover:!bg-blue-700 disabled:opacity-50 font-semibold">
+                <Save size={16} />
+                {profileSaving ? 'Saving...' : 'Save changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* View All Notifications Modal */}
       {showViewAllModal && (
