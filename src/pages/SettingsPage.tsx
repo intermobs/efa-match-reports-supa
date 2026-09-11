@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { ArrowLeft, Building2, ChevronRight, Layers3, Settings, ShieldCheck, Trophy, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardHeader from '../components/DashboardHeader';
 import { db, getCurrentUser } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
-
-interface UserProfile {
-  full_name?: string | null;
-  role?: string | null;
-  region?: string | null;
-}
 
 const managementAreas = [
   {
@@ -38,10 +32,16 @@ const accentStyles = {
   emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
 };
 
+type AdminProfile = {
+  full_name: string | null;
+  role: string | null;
+  region: string | null;
+};
+
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<AdminProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
