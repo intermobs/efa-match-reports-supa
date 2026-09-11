@@ -2,32 +2,16 @@
 /* @ts-nocheck */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar, ClipboardPen, RefreshCcw } from 'lucide-react';
+import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar, RefreshCcw, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { db, getCurrentUser } from '../lib/supabase';
-import Select from 'react-select';
 import toast from 'react-hot-toast';
 import MatchActionsModal from '../components/MatchActionsModal';
 import DashboardHeader from '../components/DashboardHeader';
-import { TOURNAMENTS, LEAGUES, TEAMS, VENUES, STADIUMS } from '../hooks/constants';
 import { AdminDetailModal } from '../components/AdminDetailModal';
 import { ReportViewer } from '../components/ReportViewer';
-
-type NotificationItem = {
-  id: string;
-  message: string;
-  time: string;
-  read?: boolean;
-  matchId?: string;
-  type?: 'assignment' | 'update' | 'completed' | 'report_submitted' | 'incident' | 'admin_update';
-  match?: any;
-};
-
-const selectStyles = {
-  control: (base: any) => ({ ...base, padding: '2px', borderColor: '#d1d5db', minHeight: '38px' }),
-  singleValue: (base: any) => ({ ...base, color: 'black' }),
-  option: (base: any, state: any) => ({ ...base, color: 'black', backgroundColor: state.isFocused ? '#EFF6FF' : 'white' }),
-  menuPortal: (base: any) => ({ ...base, zIndex: 9999 })
-};
+import { AddMatchForm, StatCard } from '../components/DashboardWidgets';
+import { OfficerDirectoryModal } from '../components/OfficerDirectoryModal';
+import { buildActiveMatchReminder, buildAdminAssignmentNotification, buildAdminMatchUpdateNotification, buildAssignmentNotification, type NotificationItem } from '../lib/dashboardNotifications';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -39,7 +23,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [search, setSearch] = useState('');
-  const currentPage = 1;
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [reportData, setReportData] = useState<any>(null);
   const [reportMatch, setReportMatch] = useState<any>(null);
@@ -153,49 +137,6 @@ export default function Dashboard() {
 
       return [updatedMatch, ...prev];
     });
-  };
-
-  const buildAssignmentNotification = (match: any) => ({
-    id: `assigned-${match.id}`,
-    message: `New Assignement: ${match.homeTeam} vs ${match.awayTeam} on ${match.date}. Fill in Match Day -1 form.`,
-    time: 'Now',
-    read: false,
-    matchId: match.id,
-    type: 'assignment' as const,
-    match: match,
-  });
-
-  const buildActiveMatchReminder = (match: any) => ({
-    id: `active-${match.id}`,
-    message: `Match Day -1 form Complete: ${match.homeTeam} vs ${match.awayTeam}. On ${match.date}, Fill Matchday form or Incident(optional).`,
-    time: 'Now',
-    read: false,
-    matchId: match.id,
-    type: 'update' as const,
-    match: match,
-  });
-
-  const buildAdminAssignmentNotification = (match: any) => ({
-    id: `admin-assigned-${match.id}`,
-    matchId: match.id,
-    type: 'admin_update' as const,
-    match: match,
-    message: `${match.assignedOfficerName || 'Unknown'} was assigned to ${match.homeTeam} vs ${match.awayTeam} on ${match.date}.`,
-    time: 'Now',
-    read: false,
-  });
-
-  const buildAdminMatchUpdateNotification = (match: any, status: string) => {
-    const base = `Officer ${match.assignedOfficerName || 'Unknown'} ${status === 'Active' ? 'updated Match Day -1 form' : 'submitted Matchday form'} for ${match.homeTeam} vs ${match.awayTeam}.`;
-    return {
-      id: `admin-status-${match.id}-${status}`,
-      message: base,
-      time: 'Now',
-      read: false,
-      matchId: match.id,
-      type: 'admin_update' as const,
-      match: match,
-    };
   };
 
   const fetchMatches = async (profile: any, user: any) => {
@@ -463,19 +404,31 @@ export default function Dashboard() {
     })
     .sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
+  const totalPages = Math.max(1, Math.ceil(filteredMatches.length / itemsPerPage));
   const paginatedMatches = filteredMatches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  const m1PendingCount = matches.filter((m: any) => m.status === 'M-1 Pending').length;
-  const activeCount = matches.filter((m: any) => m.status === 'Active').length;
-  const incompleteTotal = m1PendingCount + activeCount;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedOfficerFilter, dateFrom, dateTo]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
+  //const m1PendingCount = matches.filter((m: any) => m.status === 'M-1 Pending').length;
+  //const activeCount = matches.filter((m: any) => m.status === 'Active').length;
+  //const incompleteTotal = m1PendingCount + activeCount;
   return (
     <div className="w-screen min-h-screen bg-gray-50! flex flex-col">
       <DashboardHeader
+        userId={currentUser?.id}
         userName={userProfile?.full_name || currentUser?.email?.split('@')[0] || 'User'}
         userEmail={currentUser?.email || 'No email'}
         userRole={userProfile?.role || 'user'}
+        userRegion={userProfile?.region || ''}
         notifications={notifications}
         onLogout={() => navigate('/login')}
         onNotificationClick={handleNotificationClick}
+        onProfileSaved={(profile) => setUserProfile((current: any) => ({ ...current, ...profile }))}
       />
       
       <div className="flex-1 p-4 md:p-8 lg:p-12">
@@ -490,22 +443,12 @@ export default function Dashboard() {
             <StatCard title="Reported Incidents" subtitle="Incidents logged" value={matches.filter((m: any) => m.hasIncident === true).length} icon={<ShieldAlert className="text-red-600" />} />
           </div>
         )}
-        {!isAdmin && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <StatCard
-              title="Incomplete Tasks"
-              subtitle={`Awaiting Matchday Minus 1 [ ${m1PendingCount} ]`}
-              subtitle2={`Awaiting Matchday [ ${activeCount} ]`}
-              value={incompleteTotal}
-              icon={<ClipboardPen className="text-blue-600" />}
-            />
-          </div>
-        )}
+        
         <div className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
           <div className="border-b border-slate-200 bg-slate-50/80 p-4 md:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Overview</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Dashboard</p>
                 <h2 className="mt-1 text-xl font-bold text-slate-900">Matches History</h2>
               </div>
 
@@ -526,13 +469,14 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[1.7fr_1fr_1fr] items-end">
+            {!showAddForm && (
+              <div className="mt-4 grid grid-cols-1 items-end gap-3 md:grid-cols-2 xl:grid-cols-[1.7fr_1fr]">
               <div className="w-full">
                 <label className="mb-1.5 block text-xs font-medium text-slate-600" htmlFor="dashboard-search">Search</label>
                 <div className="relative">
                   <input
                     id="dashboard-search"
-                    placeholder="Search by Team, Officer, Stadium"
+                    placeholder="Search by Club, Officer, Stadium"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-11 text-sm text-slate-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
@@ -561,37 +505,51 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-              <div className="relative w-full">
-                <label className="mb-1.5 block text-xs font-medium text-slate-600" htmlFor="date-from">Date from</label>
-                <input
-                  id="date-from"
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white! px-3.5 py-2.5 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 [&::-webkit-calendar-picker-indicator]:bg-slate-400! :cursor-pointer"
-                />
-                <Calendar className="pointer-events-none absolute right-3 top-[42px] h-4 w-4 text-slate-400" />
+              <details className="group relative w-full">
+                <summary className="flex min-h-[42px] cursor-pointer list-none items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 shadow-sm transition hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-100 [&::-webkit-details-marker]:hidden">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="truncate">
+                      {dateFrom || dateTo ? `${dateFrom || 'Any date'} to ${dateTo || 'Any date'}` : 'Filter by date'}
+                    </span>
+                  </span>
+                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="absolute left-0 right-0 z-20 mt-2 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-lg md:grid-cols-2">
+                  <div className="relative">
+                    <label className="mb-1.5 block text-xs font-medium text-slate-600" htmlFor="date-from">Date from</label>
+                    <input
+                      id="date-from"
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white! px-3 py-2 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 [&::-webkit-calendar-picker-indicator]:bg-slate-400! :cursor-pointer"
+                    />
+                    <Calendar className="pointer-events-none absolute right-3 top-[33px] h-4 w-4 text-slate-400" />
+                  </div>
+                  <div className="relative">
+                    <label className="mb-1.5 block text-xs font-medium text-slate-600" htmlFor="date-to">Date to</label>
+                    <input
+                      id="date-to"
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white! px-3 py-2 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 [&::-webkit-calendar-picker-indicator]:bg-slate-400! :cursor-pointer"
+                    />
+                    <Calendar className="pointer-events-none absolute right-3 top-[33px] h-4 w-4 text-slate-400" />
+                  </div>
+                </div>
+              </details>
               </div>
-
-              <div className="relative w-full">
-                <label className="mb-1.5 block text-xs font-medium text-slate-600" htmlFor="date-to">Date to</label>
-                <input
-                  id="date-to"
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white! px-3.5 py-2.5 pr-9 text-sm text-slate-700 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 [&::-webkit-calendar-picker-indicator]:bg-slate-400! :cursor-pointer"
-                />
-                <Calendar className="pointer-events-none absolute right-3 top-[42px] h-4 w-4 text-slate-400" />
-              </div>
-            </div>
+            )}
           </div>
 
           {showAddForm && isAdmin && <AddMatchForm onAdd={() => { setShowAddForm(false); fetchMatches(userProfile, currentUser); }} officers={officers} />}
 
           {loading ? <p className="p-12 text-center text-slate-500">Loading...</p> : (
-            <div className="max-h-[500px] overflow-y-auto">
-              {paginatedMatches.map((match: any) => (
+            <>
+              <div className="max-h-[500px] overflow-y-auto">
+                {paginatedMatches.length > 0 ? paginatedMatches.map((match: any) => (
                 <div
                   key={match.id}
                   className="group flex cursor-pointer flex-col gap-3 border-b border-slate-200 p-4 transition hover:bg-slate-50 md:flex-row md:items-center md:justify-between md:p-5"
@@ -633,8 +591,51 @@ export default function Dashboard() {
                     </span>
                   </div>
                 </div>
-              ))}
-            </div>
+                )) : (
+                  <div className="flex min-h-56 flex-col items-center justify-center px-6 py-12 text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                      <Calendar size={22} />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      {matches.length === 0 ? 'No matches found' : 'No matches match your filters'}
+                    </h3>
+                    <p className="mt-1 max-w-sm text-sm text-slate-500">
+                      {matches.length === 0
+                        ? 'Matches will appear here once they have been added.'
+                        : 'Try adjusting your search or date range to see more results.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {filteredMatches.length > 0 && (
+                <div className="flex items-center justify-between gap-4 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm md:px-5">
+                  <p className="text-slate-500">
+                    Showing <span className="font-semibold text-slate-700">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredMatches.length)}</span> of <span className="font-semibold text-slate-700">{filteredMatches.length}</span>
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                      disabled={currentPage === 1}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span className="min-w-16 text-center text-xs font-semibold text-slate-600">{currentPage} / {totalPages}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                      disabled={currentPage === totalPages}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
         </div>
@@ -652,53 +653,7 @@ export default function Dashboard() {
         )}
 
       {showOfficerModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 !bg-slate-900/50 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-[28px] !bg-white shadow-2xl overflow-hidden border border-slate-200">
-            <div className="flex items-center justify-between gap-4 p-6 border-b border-slate-200">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-sky-600 font-semibold">Registered Officers</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-2">Officer Directory</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowOfficerModal(false)}
-                className="rounded-full p-2 text-slate-500 hover:text-slate-900 hover:!bg-slate-100 transition"
-              >
-                Close
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-slate-600">A quick view of registered officers for administrative actions.</p>
-              <div className="grid gap-3">
-                {officers.length > 0 ? officers.map((officer: any, index: number) => (
-                  <div key={officer.value || index} className="rounded-3xl border border-slate-200 p-4 bg-slate-50 flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-slate-900">{officer.label || 'Unnamed Officer'}</p>
-                      <p className="text-xs text-slate-500">{officer.email || 'No email'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-slate-700">{(officer.completed ?? 0)}</p>
-                      <p className="text-xs text-slate-500">Completed</p>
-                    </div>
-                  </div>
-                )) : (
-                  <div className="rounded-3xl border border-dashed border-slate-300 p-6 text-center text-slate-500">
-                    No registered officers available yet.
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="border-t border-slate-200 p-4 text-right">
-              <button
-                type="button"
-                onClick={() => setShowOfficerModal(false)}
-                className="inline-flex items-center justify-center rounded-full !bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
+        <OfficerDirectoryModal officers={officers} onClose={() => setShowOfficerModal(false)} />
       )}
 
       {reportData && (
@@ -713,57 +668,3 @@ export default function Dashboard() {
   );
 }
 
-function AddMatchForm({ onAdd, officers }: { onAdd: () => void, officers: any[] }) {
-  const [data, setData] = useState({ homeTeam: '', awayTeam: '', date: '', stadium: '', tournament: '', league: '', venue: '', assignedUserId: '', assignedOfficerName: '' });
-  const submit = async () => {
-    if (!data.homeTeam || !data.awayTeam || !data.date || !data.assignedUserId) return alert("All fields required");
-    const { error } = await db.from('matches').insert([{ ...data, assignedUserId: data.assignedUserId, status: 'M-1 Pending', createdAt: new Date().toISOString() }]);
-    if (error) return alert('Error saving match: ' + error.message);
-    onAdd();
-  };
-  return (
-  <div className="p-4 md:p-6 !bg-gray-50 border-b grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-    <Select options={TOURNAMENTS} menuPortalTarget={document.body} placeholder="Tournament" styles={selectStyles} onChange={(v: any) => setData({...data, tournament: v.label})} />
-    <Select options={LEAGUES} menuPortalTarget={document.body} placeholder="League" styles={selectStyles} onChange={(v: any) => setData({...data, league: v.label})} />
-    <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Home Team" styles={selectStyles} onChange={(v: any) => setData({...data, homeTeam: v.value})}/>
-    <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Away Team" styles={selectStyles} onChange={(v: any) => setData({...data, awayTeam: v.value})}/>
-    <input 
-      type="date" 
-      className="p-2 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 
-      [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer 
-      [&::-webkit-calendar-picker-indicator]:!bg-blue-900 [&::-webkit-calendar-picker-indicator]:font-white"
-       
-      onChange={e => setData({...data, date: e.target.value})} 
-    />
-    <Select options={VENUES} menuPortalTarget={document.body} placeholder="Venue" styles={selectStyles} onChange={(v: any) => setData({...data, venue: v.value})} />
-    <Select options={STADIUMS} menuPortalTarget={document.body} placeholder="Stadium" styles={selectStyles} onChange={(v: any) => setData({...data, stadium: v.value})}  />
-    <Select options={officers} menuPortalTarget={document.body} placeholder="Assign Officer" styles={selectStyles} onChange={(v: any) => setData({...data, assignedUserId: v.value, assignedOfficerName: v.label})} />
-    <button onClick={submit} className="sm:col-span-2 lg:col-span-1 !bg-green-600 text-white font-bold rounded-lg hover:!bg-green-700 transition-colors py-2">
-      Save Match
-    </button>
-  </div>
-    
-  );
-}
-// new printable area component
-function StatCard({ title, subtitle,subtitle2, value, icon, onClick }: any) {
-  const clickable = Boolean(onClick);
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full text-left bg-white p-6 rounded-3xl shadow-sm border border-gray-100 transition-all duration-200 ${clickable ? 'hover:shadow-xl hover:border-gray-200 cursor-pointer transform hover:-translate-y-0.5' : ''}`}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-600">{title}</p>
-          {subtitle && <p className="mt-2 text-xs text-slate-500">{subtitle}</p>}
-          {subtitle2 && <p className="mt-2 text-xs text-slate-500">{subtitle2}</p>}
-        </div>
-        <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">{icon}</div>
-      </div>
-      <div className="mt-6">
-        <p className="text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
-      </div>
-    </button>
-  );
-}
