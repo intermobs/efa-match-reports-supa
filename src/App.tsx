@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login'; // ← this line
 import Register from './pages/Register'; // ← this line
 import Dashboard from './pages/Dashboard';
@@ -8,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import IncidentReport from './pages/IncidentReport';
 import MatchDayReport from './pages/MatchDayReport';
 import MatchOverview from './pages/MatchOverview';
+import SettingsPage from './pages/SettingsPage';
 
 import { ShieldCheck} from 'lucide-react';
 
@@ -21,7 +23,7 @@ function Home() {
           <span>EFA Safety & Security Portal</span>
         </div>
         <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8">
-          Safety <span className="text-blue-600">Security</span> Safeguarding
+          Streamlining <span className="text-blue-600">Match Security</span> Reporting
         </h1>
         <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
           The official digital workspace for Safety & Security officers. 
@@ -58,6 +60,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             
             {/* These match the 'link' props in your Dashboard cards */}
             <Route path="/match-day-minus1" element={<MatchDayMinus1Report />} />
@@ -66,6 +69,7 @@ function App() {
             <Route path="/match-overview" element={<MatchOverview />} />
           </Routes>
         </main>
+        <Toaster position="top-right" />
       </div>
     </Router>
   );
