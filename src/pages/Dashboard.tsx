@@ -2,7 +2,7 @@
 /* @ts-nocheck */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar, RefreshCcw, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar, RefreshCcw, ChevronDown } from 'lucide-react';
 import { db, getCurrentUser } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import MatchActionsModal from '../components/MatchActionsModal';
@@ -608,7 +608,7 @@ export default function Dashboard() {
                 )}
               </div>
               {filteredMatches.length > 0 && (
-                <div className="flex items-center justify-between gap-4 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-sm md:px-5">
+                <div className="flex items-center justify-between gap-4 border-t border-slate-100 !bg-slate-50/60 px-4 py-3 text-sm md:px-5">
                   <p className="text-slate-500">
                     Showing <span className="font-semibold text-slate-700">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredMatches.length)}</span> of <span className="font-semibold text-slate-700">{filteredMatches.length}</span>
                   </p>
