@@ -617,20 +617,20 @@ export default function Dashboard() {
                       type="button"
                       onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                       disabled={currentPage === 1}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 !bg-slate-50/60 text-lg font-bold text-blue-800 transition hover:bg-blue-100! disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Previous page"
                     >
-                      <ChevronLeft size={16} />
+                      <span aria-hidden="true">&lt;</span>
                     </button>
                     <span className="min-w-16 text-center text-xs font-semibold text-slate-600">{currentPage} / {totalPages}</span>
                     <button
                       type="button"
                       onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                       disabled={currentPage === totalPages}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 !bg-slate-50/60 text-lg font-bold text-blue-800 transition hover:bg-blue-100! disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Next page"
                     >
-                      <ChevronRight size={16} />
+                      <span aria-hidden="true">&gt;</span>
                     </button>
                   </div>
                 </div>
