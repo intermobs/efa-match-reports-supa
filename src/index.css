@@ -17,6 +17,149 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.splash-screen {
+  --splash-navy: #061b3a;
+  --splash-blue: #0d4ea6;
+  --splash-cyan: #31d5e8;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(20, 97, 177, 0.28), transparent 32%),
+    linear-gradient(135deg, #04132c 0%, var(--splash-navy) 55%, #082b58 100%);
+  color: white;
+  isolation: isolate;
+}
+
+.splash-screen::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  content: '';
+  mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: splash-rise 700ms ease-out both;
+}
+
+.splash-mark {
+  position: relative;
+  display: grid;
+  width: 136px;
+  height: 136px;
+  place-items: center;
+  margin-bottom: 30px;
+}
+
+.splash-mark img {
+  position: relative;
+  z-index: 2;
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.28));
+}
+
+.splash-ring {
+  position: absolute;
+  border: 1px solid rgba(49, 213, 232, 0.42);
+  border-radius: 50%;
+}
+
+.splash-ring-outer {
+  inset: 2px;
+  border-right-color: transparent;
+  border-bottom-color: rgba(255, 255, 255, 0.16);
+  animation: splash-spin 5s linear infinite;
+}
+
+.splash-ring-inner {
+  inset: 18px;
+  border-color: rgba(255, 255, 255, 0.16);
+  border-left-color: var(--splash-cyan);
+  animation: splash-spin 3s linear infinite reverse;
+}
+
+.splash-kicker {
+  margin: 0 0 10px;
+  color: var(--splash-cyan);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.splash-content h1 {
+  margin: 0;
+  font-size: clamp(1.55rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.splash-loader {
+  width: 180px;
+  height: 3px;
+  margin-top: 30px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.splash-loader span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--splash-cyan);
+  box-shadow: 0 0 14px var(--splash-cyan);
+  animation: splash-progress 850ms ease-in-out infinite;
+}
+
+.splash-status {
+  margin: 12px 0 0;
+  color: rgba(219, 239, 255, 0.68);
+  font-size: 0.78rem;
+}
+
+.splash-glow {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border: 1px solid rgba(49, 213, 232, 0.13);
+  border-radius: 50%;
+}
+
+.splash-glow-top { top: -150px; right: -60px; }
+.splash-glow-bottom { bottom: -165px; left: -70px; border-color: rgba(53, 123, 225, 0.2); }
+
+@keyframes splash-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splash-spin { to { transform: rotate(360deg); } }
+
+@keyframes splash-progress {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(380%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-content,
+  .splash-ring,
+  .splash-loader span { animation: none; }
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -49,13 +192,6 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:hover {
-  
-}
-button:focus,
-button:focus-visible {
- 
-}
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -71,37 +207,90 @@ button:focus-visible {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  #printable-area, #printable-area * {
-    visibility: visible;
-  }
-  #printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 210mm;
-    padding: 20mm;
-    box-sizing: border-box;
-  }
-  #printable-area .report-summary {
-    page-break-after: always;
-    break-after: page;
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-  #printable-area .report-details {
+  html, body {
     display: block !important;
-    page-break-inside: auto;
-    break-inside: auto;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
   }
-  #printable-area .report-details > * {
-    page-break-inside: avoid;
-    break-inside: avoid;
+
+  body * {
+    visibility: hidden !important;
   }
-  #printable-area .print-field {
-    page-break-inside: avoid;
-    break-inside: avoid;
+
+  #printable-area,
+  #printable-area * {
+    visibility: visible !important;
+  }
+
+  #printable-area {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: 180mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    page-break-before: auto !important;
+    page-break-after: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #printable-area img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #printable-area .border-b,
+  #printable-area .grid,
+  #printable-area .space-y-8 > *,
+  #printable-area .space-y-4 > * {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  #printable-area .rounded-2xl,
+  #printable-area .shadow-2xl,
+  #printable-area .overflow-y-auto {
+    overflow: visible !important;
+  }
+
+  button,
+  nav,
+  footer,
+  header,
+  .hidden {
+    display: none !important;
+  }
+
+ /* @page {
+    size: A4 portrait;
+    margin: 15mm;
+  } */
+  @page { 
+    size: A4 portrait; 
+    margin: 10mm 12mm; 
+    /* This removes the browser header/footer content */
+    @bottom-left { content: none; }
+    @bottom-right { content: none; }
+    @top-left { content: none; }
+    @top-right { content: none; }
+  }
+  
+  /* Force browsers to honor these settings */
+  @media print {
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
 }
