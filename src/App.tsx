@@ -23,7 +23,7 @@ function SplashScreen() {
           <span className="splash-ring splash-ring-inner" />
           <img src="/efa_logo.png" alt="EFA" />
         </div>
-        <p className="splash-kicker">EFA Digital</p>
+        <p className="splash-kicker">e-Sigwaca</p>
         <h1>Safety &amp; Security Portal</h1>
         <div className="splash-loader" aria-hidden="true">
           <span />
