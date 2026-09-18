@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login'; // ← this line
@@ -11,10 +12,41 @@ import MatchDayReport from './pages/MatchDayReport';
 import MatchOverview from './pages/MatchOverview';
 import SettingsPage from './pages/SettingsPage';
 
+function SplashScreen() {
+  return (
+    <div className="splash-screen" role="status" aria-label="Loading EFA Safety and Security Portal">
+      <div className="splash-glow splash-glow-top" />
+      <div className="splash-glow splash-glow-bottom" />
+      <div className="splash-content">
+        <div className="splash-mark">
+          <span className="splash-ring splash-ring-outer" />
+          <span className="splash-ring splash-ring-inner" />
+          <img src="/efa_logo.png" alt="EFA" />
+        </div>
+        <p className="splash-kicker">EFA Digital</p>
+        <h1>Safety &amp; Security Portal</h1>
+        <div className="splash-loader" aria-hidden="true">
+          <span />
+        </div>
+        <p className="splash-status">Preparing your secure workspace</p>
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const [isBooting, setIsBooting] = useState(true);
+
+  useEffect(() => {
+    const splashTimer = window.setTimeout(() => setIsBooting(false), 850);
+    return () => window.clearTimeout(splashTimer);
+  }, []);
+
+  if (isBooting) return <SplashScreen />;
+
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50!">
         {/* Modern Header */}
         <main className="flex-grow">
           <Routes>
