@@ -15,8 +15,14 @@ const selectStyles = {
 export function AddMatchForm({ onAdd, officers }: { onAdd: () => void; officers: any[] }) {
   const [data, setData] = useState({ homeTeam: '', awayTeam: '', date: '', stadium: '', tournament: '', league: '', venue: '', assignedUserId: '', assignedOfficerName: '' });
 
+  const teamOptionsFor = (excludedTeam: string) => TEAMS.map((group: any) => ({
+    ...group,
+    options: group.options.filter((team: any) => team.value !== excludedTeam),
+  })).filter((group: any) => group.options.length > 0);
+
   const submit = async () => {
     if (!data.homeTeam || !data.awayTeam || !data.date || !data.assignedUserId) return alert('All fields required');
+    if (data.homeTeam === data.awayTeam) return alert('Home team and away team must be different.');
     const { error } = await db.from('matches').insert([{ ...data, assignedUserId: data.assignedUserId, status: 'M-1 Pending', createdAt: new Date().toISOString() }]);
     if (error) return alert('Error saving match: ' + error.message);
     onAdd();
@@ -26,8 +32,24 @@ export function AddMatchForm({ onAdd, officers }: { onAdd: () => void; officers:
     <div className="p-4 md:p-6 !bg-gray-50 border-b grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       <Select options={TOURNAMENTS} menuPortalTarget={document.body} placeholder="Tournament" styles={selectStyles} onChange={(v: any) => setData({ ...data, tournament: v.label })} />
       <Select options={LEAGUES} menuPortalTarget={document.body} placeholder="League" styles={selectStyles} onChange={(v: any) => setData({ ...data, league: v.label })} />
-      <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Home Team" styles={selectStyles} onChange={(v: any) => setData({ ...data, homeTeam: v.value })} />
-      <Select options={TEAMS} menuPortalTarget={document.body} placeholder="Away Team" styles={selectStyles} onChange={(v: any) => setData({ ...data, awayTeam: v.value })} />
+      <Select
+        options={teamOptionsFor(data.awayTeam)}
+        value={data.homeTeam ? { value: data.homeTeam, label: data.homeTeam } : null}
+        menuPortalTarget={document.body}
+        placeholder="Home Team"
+        styles={selectStyles}
+        onChange={(v: any) => setData({ ...data, homeTeam: v?.value || '' })}
+        noOptionsMessage={() => 'Select a different away team first'}
+      />
+      <Select
+        options={teamOptionsFor(data.homeTeam)}
+        value={data.awayTeam ? { value: data.awayTeam, label: data.awayTeam } : null}
+        menuPortalTarget={document.body}
+        placeholder="Away Team"
+        styles={selectStyles}
+        onChange={(v: any) => setData({ ...data, awayTeam: v?.value || '' })}
+        noOptionsMessage={() => 'Select a different home team first'}
+      />
       <input
         type="date"
         className="p-2 border border-gray-200 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:!bg-blue-900 [&::-webkit-calendar-picker-indicator]:font-white"
