@@ -582,10 +582,10 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between gap-3 md:min-w-[180px] md:justify-end">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
                       match.status === 'Active'
-                        ? 'bg-blue-100 text-blue-700'
+                        ? 'bg-blue-100! text-blue-700'
                         : match.status === 'Completed'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700'
+                          ? 'bg-emerald-100! text-emerald-700'
+                          : 'bg-amber-100! text-amber-700'
                     }`}>
                       {match.status}
                     </span>
