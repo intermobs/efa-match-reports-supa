@@ -27,6 +27,20 @@ export const signOut = async () => {
   if (error) throw error;
 };
 
+export const requestPasswordReset = async (email: string, redirectTo?: string) => {
+  const { data, error } = await db.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: redirectTo ?? `${window.location.origin}/reset-password`,
+  });
+  if (error) throw error;
+  return data;
+};
+
+export const updatePassword = async (newPassword: string) => {
+  const { data, error } = await db.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+  return data;
+};
+
 export const updateProfile = async (_user: User | null, { displayName }: { displayName: string }) => {
   if (!_user) throw new Error('No authenticated user');
   const { data, error } = await db.auth.updateUser({ data: { full_name: displayName } });
