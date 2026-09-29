@@ -193,14 +193,14 @@ export default function MatchDayMinus1Report() {
             <h2 className="text-xl font-semibold text-slate-900">Operational observations</h2>
             <div className="mt-6 space-y-5">
               {[
-                { label: 'Venue Safety & Security meeting?', field: 'venueMeeting' },
-                { label: 'Briefing of stewards’ supervisors?', field: 'stewardsBriefing' },
-                { label: 'Control measures?', field: 'control_measures' },
-                { label: 'Match coordination meeting?', field: 'matchCoordination' },
-                { label: 'Cooperation with organizing committee?', field: 'teamTrainings' },
-                { label: 'Cooperation with VOC Commander?', field: 'vocCommanderCooperation' },
-                { label: 'Cooperation with stadium authority?', field: 'stadiumAuthorityCooperation' },
-                { label: 'Cooperation with PLE delegation?', field: 'pleDelegationCooperation' },
+                { label: 'How was the Venue Safety & Security meeting? Explain Briefly', field: 'venueMeeting' },
+                { label: 'How was the Briefing of Stewards’ supervisors? Explain Briefly', field: 'stewardsBriefing' },
+                { label: 'How is the red-line precinct? Explain Briefly', field: 'control_measures' },
+                { label: 'How was the Match coordination meeting? Explain Briefly', field: 'matchCoordination' },
+                { label: 'How was the Cooperation with organizing committee? Explain Briefly', field: 'teamTrainings' },
+                { label: 'How was the Cooperation with VOC Commander? Explain Briefly', field: 'vocCommanderCooperation' },
+                { label: 'How was the Cooperation with stadium authority? Explain Briefly', field: 'stadiumAuthorityCooperation' },
+                { label: 'How was the Cooperation and teamwork with PLE delegation? Explain Briefly', field: 'pleDelegationCooperation' },
               ].map((item) => (
                 <TextArea className="!bg-white"
                   key={item.field}
