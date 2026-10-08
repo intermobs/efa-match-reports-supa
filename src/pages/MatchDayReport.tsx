@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase'; // Supabase client
 
 const schema = z.object({
@@ -164,23 +165,29 @@ export default function MatchDayReport() {
   };
 
   return (
-  <div className="w-screen min-h-screen !bg-gray-50 flex items-center justify-center p-4">
+  <div className="w-screen min-h-screen !bg-gray-50 flex items-center justify-center p-3 sm:p-4">
     <div className="mx-auto flex max-w-6xl flex-col gap-6 w-full">
       <div className="overflow-hidden rounded-[32px] border border-slate-200 !bg-white shadow-xl shadow-slate-200/50">
        
-          <div className="!bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-700 px-8 py-10 sm:px-12">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm uppercase tracking-[0.24em] text-sky-100">Match Day Report</p>
+          <div className="border-b border-slate-200 !bg-white px-4 py-4 sm:px-6 sm:py-5 lg:px-10">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                <button type="button" onClick={() => navigate(-1)} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 !bg-white px-2.5 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:!bg-slate-50 hover:text-slate-900 sm:gap-2 sm:px-3 sm:text-sm">
+                  <ArrowLeft size={14} className="sm:h-4 sm:w-4" /> Back
+                </button>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="h-2 w-2 shrink-0 rounded-full !bg-sky-500 sm:h-2.5 sm:w-2.5" aria-hidden="true" />
+                  <h1 className="text-xs font-semibold leading-tight text-slate-800 sm:text-sm">Match Day Report</h1>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <span className="rounded-2xl border border-white/15 !bg-white/10 px-4 py-2 text-sm text-white">Match ID: {match?.id ?? 'N/A'}</span>
-                <span className="rounded-2xl border border-white/15 !bg-white/10 px-4 py-2 text-sm text-white">Status: {match ? 'In progress' : 'Draft'}</span>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border border-slate-200 !bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 sm:px-3 sm:text-xs">Match ID: {match?.id ?? 'N/A'}</span>
+                <span className="rounded-full border border-slate-200 !bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 sm:px-3 sm:text-xs">Status: {match ? 'In progress' : 'Draft'}</span>
               </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-4 pb-6 pt-6 sm:px-6 sm:pb-8 sm:pt-8 lg:px-10">
             <section className=" border border-slate-200 !bg-slate-50 p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">Match Details</h2>
                 <div className="mt-6 space-y-4 grid gap-4 md:grid-cols-2">
@@ -204,7 +211,7 @@ export default function MatchDayReport() {
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <Input label="Home Score" type="number" {...register('homeScore', { valueAsNumber: true })} error={errors.homeScore} />
                   <Input label="Away Score" type="number" {...register('awayScore', { valueAsNumber: true })} error={errors.awayScore} />
-                  <Input label="Attendance" type="number" {...register('attendance', { valueAsNumber: true })} error={errors.attendance} />
+                  <Input label="What was the stadium attendance?" type="number" {...register('attendance', { valueAsNumber: true })} error={errors.attendance} />
                 </div>
               </div>
             </section>
@@ -215,16 +222,16 @@ export default function MatchDayReport() {
                 <p className="mt-1 text-sm text-slate-500">Provide a concise evaluation for each key area below.</p>
                 <div className="mt-6 space-y-5">
                   {[
-                    { label: 'Access control operation', field: 'accessControl' },
-                    { label: 'Staircases and gangways', field: 'staircases' },
-                    { label: 'Supporter behaviour', field: 'supporterBehavior' },
-                    { label: 'Team official behaviour', field: 'officialBehavior' },
-                    { label: 'VOC interaction', field: 'vocInteraction' },
-                    { label: 'Stadium cleanliness', field: 'stadiumCleanliness' },
-                    { label: 'Security debrief', field: 'securityDebrief' },
-                    { label: 'LOC cooperation', field: 'locCooperation' },
-                    { label: 'Stadium authority cooperation', field: 'stadiumAuthority' },
-                    { label: 'PLE delegation cooperation', field: 'pleDelegation' },
+                    { label: 'How was the Access control operation during matchday? Explain briefly.', field: 'accessControl' },
+                    { label: 'Were Staircases and gangways clear of Spectators? Explain briefly.', field: 'staircases' },
+                    { label: 'How was the general behaviour of Supporters? Explain briefly.', field: 'supporterBehavior' },
+                    { label: 'How was the behaviour of Team officials? Explain briefly.', field: 'officialBehavior' },
+                    { label: 'How was the interaction with the Venue Operation Center (VOC)? Explain briefly.', field: 'vocInteraction' },
+                    { label: 'Were Stadium surroundings clean? Explain briefly.', field: 'stadiumCleanliness' },
+                    { label: 'How was the general Security debriefing? Explain briefly.', field: 'securityDebrief' },
+                    { label: 'How was the cooperation and teamwork with LOC counterparts? Explain briefly.', field: 'locCooperation' },
+                    { label: 'How was the cooperation and teamwork with the Stadium authority? Explain briefly.', field: 'stadiumAuthority' },
+                    { label: 'How was the cooperation and teamwork with the PLE delegation? Explain briefly.', field: 'pleDelegation' },
                   ].map((item) => (
                     <TextArea className="!bg-white"
                       key={item.field}
@@ -240,8 +247,8 @@ export default function MatchDayReport() {
                 <h2 className="text-xl font-semibold text-slate-900">Final evaluation</h2>
                 <p className="mt-1 text-sm text-slate-500">Summarise any issues and provide your overall assessment.</p>
                 <div className="mt-6 space-y-5">
-                  <TextArea label="Overall evaluation" {...register('overallEvaluation')} error={errors.overallEvaluation} />
-                  <TextArea label="Issues or concerns" {...register('issuesDescription')} error={errors.issuesDescription} />
+                  <TextArea label="What is your Overall evaluation?" {...register('overallEvaluation')} error={errors.overallEvaluation} />
+                  <TextArea label="If the were any issues/concerns, please provide a Description and Evaluation of the resolution for each of the issues. Explain briefly." {...register('issuesDescription')} error={errors.issuesDescription} />
                 </div>
               </div>
             </section>
