@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Upload } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const schema = z.object({
@@ -149,23 +149,25 @@ export default function IncidentReport() {
   };
   
   return (
-  <div className="w-screen min-h-screen !bg-gray-50 flex items-center justify-center p-4">
+  <div className="w-screen min-h-screen !bg-gray-50 flex items-center justify-center p-3 sm:p-4">
     <div className="mx-auto flex max-w-6xl flex-col gap-6 w-full">
       <div className="overflow-hidden rounded-[32px] border border-slate-200 !bg-white shadow-xl shadow-slate-200/50">
         
-        {/* Gradient Header */}
-        <div className="!bg-gradient-to-r from-red-700 via-red-800 to-red-950 px-8 py-10 sm:px-12">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-red-100">Incident Report</p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <span className="rounded-2xl border border-white/15 !bg-white/10 px-4 py-2 text-sm text-white">Security & Safety</span>
+        <div className="border-b border-slate-200 !bg-white px-4 py-4 sm:px-6 sm:py-5 lg:px-10">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <button type="button" onClick={() => navigate(-1)} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 !bg-white px-2.5 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:!bg-slate-50 hover:text-slate-900 sm:gap-2 sm:px-3 sm:text-sm">
+                <ArrowLeft size={14} className="sm:h-4 sm:w-4" /> Back
+              </button>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="h-2 w-2 shrink-0 rounded-full !bg-red-500 sm:h-2.5 sm:w-2.5" aria-hidden="true" />
+                <h1 className="text-xs font-semibold leading-tight text-slate-800 sm:text-sm">Incident Report</h1>
+              </div>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-4 pb-6 pt-6 sm:px-6 sm:pb-8 sm:pt-8 lg:px-10">
           
           {/* Incident Details Section */}
           <section className="rounded-3xl border border-slate-200 !bg-slate-50 p-6 shadow-sm">
@@ -189,13 +191,13 @@ export default function IncidentReport() {
               <TextArea className="!bg-white" label="Where and when did the incident take place?" {...register('incidentLocation')} error={errors.incidentLocation} disabled={isViewOnly} />
               <TextArea className="!bg-white" label="Please specify as accurately as possible, what happened." {...register('whatHappened')} error={errors.whatHappened} disabled={isViewOnly} />
               <TextArea className="!bg-white" label="What actions were taken to resolve the Incident?" {...register('actionsTaken')} error={errors.actionsTaken} disabled={isViewOnly} />
-              <TextArea className="!bg-white" label="Any Additional Information" {...register('additionalInfo')} error={errors.additionalInfo} disabled={isViewOnly} />
+              <TextArea className="!bg-white" label="Please provide any additional information." {...register('additionalInfo')} error={errors.additionalInfo} disabled={isViewOnly} />
             </div>
           </section>
 
           {/* Photo Upload Section */}
           <section className="rounded-3xl border border-slate-200 !bg-slate-50 p-6 shadow-sm">
-            <h3 className="text-xl font-semibold text-slate-900">Evidence</h3>
+            <h3 className="text-xl font-semibold text-slate-900">Provide Evidence Photo</h3>
             <div className="mt-6 p-6 border-2 border-dashed border-slate-300 rounded-2xl !bg-white text-center">
               <Upload className="mx-auto text-slate-400 mb-2" />
               <input 
