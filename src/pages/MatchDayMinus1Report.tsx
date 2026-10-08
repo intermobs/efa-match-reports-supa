@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const schema = z.object({
@@ -20,6 +21,8 @@ const schema = z.object({
   control_measures: z.string().min(1, 'Required'),
   matchCoordination: z.string().min(1, 'Required'),
   teamTrainings: z.string().min(1, 'Required'),
+  pressConferences: z.string().min(1, 'Required'),
+  locCounterparts: z.string().min(1, 'Required'),
   vocCommanderCooperation: z.string().min(1, 'Required'),
   stadiumAuthorityCooperation: z.string().min(1, 'Required'),
   pleDelegationCooperation: z.string().min(1, 'Required'),
@@ -49,6 +52,8 @@ export default function MatchDayMinus1Report() {
     control_measures: report?.control_measures || '',
     matchCoordination: report?.match_coordination || '',
     teamTrainings: report?.team_trainings || '',
+    pressConferences: report?.press_conferences || '',
+    locCounterparts: report?.loc_counterparts || '',
     vocCommanderCooperation: report?.voc_commander_cooperation || '',
     stadiumAuthorityCooperation: report?.stadium_authority_cooperation || '',
     pleDelegationCooperation: report?.ple_delegation_cooperation || '',
@@ -121,6 +126,8 @@ export default function MatchDayMinus1Report() {
           control_measures: data.control_measures,
           match_coordination: data.matchCoordination,
           team_trainings: data.teamTrainings,
+          press_conferences: data.pressConferences,
+          loc_counterparts: data.locCounterparts,
           voc_commander_cooperation: data.vocCommanderCooperation,
           stadium_authority_cooperation: data.stadiumAuthorityCooperation,
           ple_delegation_cooperation: data.pleDelegationCooperation,
@@ -147,24 +154,29 @@ export default function MatchDayMinus1Report() {
   };
 
   return (
-  <div className="w-screen min-h-screen !bg-gray-50 flex items-center justify-center p-4">
+  <div className="w-screen min-h-screen !bg-gray-50 flex items-center justify-center p-3 sm:p-4">
     <div className="mx-auto flex max-w-6xl flex-col gap-6 w-full">
       <div className="overflow-hidden rounded-[32px] border border-slate-200 !bg-white shadow-xl shadow-slate-200/50">
         
-        {/* Gradient Header */}
-        <div className="!bg-gradient-to-r from-sky-600 via-blue-700 to-indigo-700 px-8 py-10 sm:px-12">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.24em] text-sky-100">Match Day -1 Report</p>
+        <div className="border-b border-slate-200 !bg-white px-4 py-4 sm:px-6 sm:py-5 lg:px-10">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <button type="button" onClick={() => navigate(-1)} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 !bg-white px-2.5 py-2 text-xs font-medium text-slate-600 shadow-sm transition hover:!bg-slate-50 hover:text-slate-900 sm:gap-2 sm:px-3 sm:text-sm">
+                <ArrowLeft size={14} className="sm:h-4 sm:w-4" /> Back
+              </button>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="h-2 w-2 shrink-0 rounded-full !bg-sky-500 sm:h-2.5 sm:w-2.5" aria-hidden="true" />
+                <h1 className="text-xs font-semibold leading-tight text-slate-800 sm:text-sm">Match Day -1 Report</h1>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <span className="rounded-2xl border border-white/15 !bg-white/10 px-4 py-2 text-sm text-white">Match ID: {match?.id ?? 'N/A'}</span>
-              <span className="rounded-2xl border border-white/15 !bg-white/10 px-4 py-2 text-sm text-white">Status: {match ? 'In progress' : 'Draft'}</span>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full border border-slate-200 !bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 sm:px-3 sm:text-xs">Match ID: {match?.id ?? 'N/A'}</span>
+              <span className="rounded-full border border-slate-200 !bg-slate-50 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 sm:px-3 sm:text-xs">Status: {match ? 'In progress' : 'Draft'}</span>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-6 pb-8 pt-8 sm:px-10 sm:pb-10">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 px-4 pb-6 pt-6 sm:px-6 sm:pb-8 sm:pt-8 lg:px-10">
           
           {/* Match Details Section */}
           <section className="border border-slate-200 !bg-slate-50 p-6 shadow-sm rounded-3xl">
@@ -197,9 +209,11 @@ export default function MatchDayMinus1Report() {
                 { label: 'How was the Briefing of Stewards’ supervisors? Explain Briefly', field: 'stewardsBriefing' },
                 { label: 'How is the red-line precinct? Explain Briefly', field: 'control_measures' },
                 { label: 'How was the Match coordination meeting? Explain Briefly', field: 'matchCoordination' },
-                { label: 'How was the Cooperation with organizing committee? Explain Briefly', field: 'teamTrainings' },
-                { label: 'How was the Cooperation with VOC Commander? Explain Briefly', field: 'vocCommanderCooperation' },
-                { label: 'How was the Cooperation with stadium authority? Explain Briefly', field: 'stadiumAuthorityCooperation' },
+                { label: 'How were the Official Team trainings? Explain Briefly', field: 'teamTrainings' },
+                { label: 'How were the Press Conferences? Explain Briefly', field: 'pressConferences' },
+                { label: 'How was the cooperation and teamwork with LOC counterparts? Explain Briefly', field: 'locCounterparts' },
+                { label: 'How was the Cooperation and teamwork with the Venue Operations Center (VOC) Commander? Explain Briefly', field: 'vocCommanderCooperation' },
+                { label: 'How was the Cooperation and teamwork with Stadium Authority? Explain Briefly', field: 'stadiumAuthorityCooperation' },
                 { label: 'How was the Cooperation and teamwork with PLE delegation? Explain Briefly', field: 'pleDelegationCooperation' },
               ].map((item) => (
                 <TextArea className="!bg-white"
@@ -217,8 +231,8 @@ export default function MatchDayMinus1Report() {
             <h2 className="text-xl font-semibold text-slate-900">Final evaluation</h2>
             <p className="mt-1 text-sm text-slate-500">Summarise any issues and provide your overall assessment.</p>
             <div className="mt-6 space-y-5">
-              <TextArea label="Overall evaluation" {...register('overallEvaluation')} error={errors.overallEvaluation} />
-              <TextArea label="Issues or concerns" {...register('issuesDescription')} error={errors.issuesDescription} />
+              <TextArea label="What is your Overall evaluation?" {...register('overallEvaluation')} error={errors.overallEvaluation} />
+              <TextArea label="If there were any issue/concerns, please provide a description and evaluation of the resolution for each of the issues." {...register('issuesDescription')} error={errors.issuesDescription} />
             </div>
           </section>
 
