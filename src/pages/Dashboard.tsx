@@ -13,6 +13,39 @@ import { AddMatchForm, StatCard } from '../components/DashboardWidgets';
 import { OfficerDirectoryModal } from '../components/OfficerDirectoryModal';
 import { buildActiveMatchReminder, buildAdminAssignmentNotification, buildAdminMatchUpdateNotification, buildAssignmentNotification, type NotificationItem } from '../lib/dashboardNotifications';
 
+function MatchFormProgress({ status }: { status: string }) {
+  const matchdayMinusOneSubmitted = status === 'Active' || status === 'Completed';
+  const matchdaySubmitted = status === 'Completed';
+  const matchdayNotStarted = status === 'M-1 Pending';
+
+  return (
+    <div className="w-full md:w-64" aria-label="Match form progress">
+      <div className="flex gap-1.5" aria-hidden="true">
+        <span className={`h-2 flex-1 rounded-full ${matchdayMinusOneSubmitted ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+        <span className={`h-2 flex-1 rounded-full ${
+          matchdaySubmitted ? 'bg-emerald-500' : matchdayNotStarted ? 'bg-slate-200' : 'bg-amber-400'
+        }`} />
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs font-semibold text-slate-700">Matchday -1</p>
+          <p className={`mt-0.5 text-xs font-medium ${matchdayMinusOneSubmitted ? 'text-emerald-700' : 'text-amber-700'}`}>
+            {matchdayMinusOneSubmitted ? 'Submitted' : 'Awaiting'}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-slate-700">Matchday</p>
+          <p className={`mt-0.5 text-xs font-medium ${
+            matchdaySubmitted ? 'text-emerald-700' : matchdayNotStarted ? 'text-slate-500' : 'text-amber-700'
+          }`}>
+            {matchdaySubmitted ? 'Submitted' : matchdayNotStarted ? 'Not started' : 'Awaiting'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -567,28 +600,20 @@ export default function Dashboard() {
                         </span>
                       )}
                     </div>
-
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
                       <span>{match.date}</span>
                       <span className="hidden h-1 w-1 rounded-full bg-slate-300 md:inline-block" />
                       <span>{match.stadium}</span>
                     </div>
-
-                    <div className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                      Assigned: {match.assignedOfficerName || 'Unassigned'}
-                    </div>
+                    {isAdmin && (
+                      <div className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                        Assigned: {match.assignedOfficerName || 'Unassigned'}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between gap-3 md:min-w-[180px] md:justify-end">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      match.status === 'Active'
-                        ? 'bg-blue-100! text-blue-700'
-                        : match.status === 'Completed'
-                          ? 'bg-emerald-100! text-emerald-700'
-                          : 'bg-amber-100! text-amber-700'
-                    }`}>
-                      {match.status}
-                    </span>
+                  <div className="flex w-full items-center md:w-auto md:justify-end">
+                    <MatchFormProgress status={match.status} />
                   </div>
                 </div>
                 )) : (
@@ -667,4 +692,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
