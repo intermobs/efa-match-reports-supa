@@ -496,7 +496,7 @@ export default function Dashboard() {
                     }`}
                   >
                     {showAddForm ? <X size={16} /> : <Plus size={16} />}
-                    <span>{showAddForm ? 'Cancel' : 'Add Match'}</span>
+                    <span>{showAddForm ? 'Cancel' : 'Add Assignment'}</span>
                   </button>
                 )}
               </div>
