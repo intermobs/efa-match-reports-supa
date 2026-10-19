@@ -10,13 +10,12 @@ import DashboardHeader from '../components/DashboardHeader';
 import { AdminDetailModal } from '../components/AdminDetailModal';
 import { ReportViewer } from '../components/ReportViewer';
 import { AddMatchForm, StatCard } from '../components/DashboardWidgets';
-import { OfficerDirectoryModal } from '../components/OfficerDirectoryModal';
 import { buildActiveMatchReminder, buildAdminAssignmentNotification, buildAdminMatchUpdateNotification, buildAssignmentNotification, type NotificationItem } from '../lib/dashboardNotifications';
 
-function MatchFormProgress({ status }: { status: string }) {
-  const matchdayMinusOneSubmitted = status === 'Active' || status === 'Completed';
-  const matchdaySubmitted = status === 'Completed';
-  const matchdayNotStarted = status === 'M-1 Pending';
+function MatchFormProgress({ match }: { match: any }) {
+  const matchdayMinusOneSubmitted = match.hasM1Report || match.status === 'Active' || match.status === 'Completed';
+  const matchdaySubmitted = match.hasMatchdayReport || match.status === 'Completed';
+  const matchdayNotStarted = !matchdayMinusOneSubmitted && !matchdaySubmitted;
 
   return (
     <div className="w-full md:w-64" aria-label="Match form progress">
@@ -61,7 +60,6 @@ export default function Dashboard() {
   const [reportData, setReportData] = useState<any>(null);
   const [reportMatch, setReportMatch] = useState<any>(null);
   const [viewingForm, setViewingForm] = useState<string>('');
-  const [showOfficerModal, setShowOfficerModal] = useState(false);
   const [selectedOfficerFilter, setSelectedOfficerFilter] = useState<any>(null);
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
@@ -138,6 +136,10 @@ export default function Dashboard() {
         db.from('incident_reports').select('id').eq('id', irId).maybeSingle(),
       ]);
 
+      if (m1Result.error) throw m1Result.error;
+      if (mdResult.error) throw mdResult.error;
+      if (irResult.error) throw irResult.error;
+
       setAvailableReports({
         m1: !!m1Result.data,
         day: !!mdResult.data,
@@ -186,16 +188,24 @@ export default function Dashboard() {
 
     const enrichedMatches = await Promise.all((matchRows ?? []).map(async (matchRow: any) => {
       try {
-        const { data: incidentReport, error: incidentError } = await db
-          .from('incident_reports')
-          .select('id')
-          .eq('id', `IR-${matchRow.id}`)
-          .maybeSingle();
+        const [m1Result, matchdayResult, incidentResult] = await Promise.all([
+          db.from('m1_reports').select('id').eq('id', `M1-${matchRow.id}`).maybeSingle(),
+          db.from('matchday_reports').select('id').eq('id', `MD-${matchRow.id}`).maybeSingle(),
+          db.from('incident_reports').select('id').eq('id', `IR-${matchRow.id}`).maybeSingle(),
+        ]);
 
-        if (incidentError) throw incidentError;
-        return { ...matchRow, hasIncident: Boolean(incidentReport) };
+        if (m1Result.error) throw m1Result.error;
+        if (matchdayResult.error) throw matchdayResult.error;
+        if (incidentResult.error) throw incidentResult.error;
+
+        return {
+          ...matchRow,
+          hasM1Report: Boolean(m1Result.data),
+          hasMatchdayReport: Boolean(matchdayResult.data),
+          hasIncident: Boolean(incidentResult.data),
+        };
       } catch (error) {
-        console.error('Error checking incident report for match', matchRow.id, error);
+        console.error('Error checking reports for match', matchRow.id, error);
         return { ...matchRow, hasIncident: false };
       }
     }));
@@ -242,7 +252,8 @@ export default function Dashboard() {
         const { data: officersData, error: officersError } = await db
           .from('users')
           .select('id, full_name, email')
-          .eq('role', 'officer');
+          .eq('role', 'officer')
+          .eq('status', 'Active');
 
         if (officersError) throw officersError;
 
@@ -366,7 +377,16 @@ export default function Dashboard() {
             type: 'report_submitted',
           };
           addNotification(notif);
+          if (report.match_id) {
+            setMatches((prev) => prev.map((match: any) => match.id === report.match_id ? { ...match, hasM1Report: true } : match));
+          }
           toast.success(notif.message, { duration: 5000 });
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'm1_reports' }, (payload) => {
+          const report = payload.new;
+          if (report?.match_id) {
+            setMatches((prev) => prev.map((match: any) => match.id === report.match_id ? { ...match, hasM1Report: true } : match));
+          }
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matchday_reports' }, (payload) => {
           const report = payload.new;
@@ -379,7 +399,16 @@ export default function Dashboard() {
             type: 'report_submitted',
           };
           addNotification(notif);
+          if (report.match_id) {
+            setMatches((prev) => prev.map((match: any) => match.id === report.match_id ? { ...match, hasMatchdayReport: true } : match));
+          }
           toast.success(notif.message, { duration: 5000 });
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matchday_reports' }, (payload) => {
+          const report = payload.new;
+          if (report?.match_id) {
+            setMatches((prev) => prev.map((match: any) => match.id === report.match_id ? { ...match, hasMatchdayReport: true } : match));
+          }
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'incident_reports' }, (payload) => {
           const report = payload.new;
@@ -472,7 +501,7 @@ export default function Dashboard() {
             <StatCard title="Coming Matches" subtitle="Awaiting Matchday-1 Form" value={matches.filter((m: any) => m.status === 'M-1 Pending').length} icon={<Clock className="text-orange-300" />} />
             <StatCard title="Active Matches" subtitle="In progress, Waiting for Matchday Form" value={matches.filter((m: any) => m.status === 'Active').length} icon={<ShieldAlert className="text-green-600" />} />
             <StatCard title="Total Matches" subtitle="Scheduled & completed" value={matches.length} icon={<Trophy className="text-blue-600" />} />
-            <StatCard title="Registered Officers" subtitle="Click to view details" value={officers.length} icon={<Users className="text-black" />} onClick={() => setShowOfficerModal(true)} />
+            <StatCard title="Active Officers" subtitle="Click to manage officers" value={officers.length} icon={<Users className="text-black" />} onClick={() => navigate('/settings#officers')} />
             <StatCard title="Reported Incidents" subtitle="Incidents logged" value={matches.filter((m: any) => m.hasIncident === true).length} icon={<ShieldAlert className="text-red-600" />} />
           </div>
         )}
@@ -613,7 +642,7 @@ export default function Dashboard() {
                   </div>
 
                   <div className="flex w-full items-center md:w-auto md:justify-end">
-                    <MatchFormProgress status={match.status} />
+                    <MatchFormProgress match={match} />
                   </div>
                 </div>
                 )) : (
@@ -676,10 +705,6 @@ export default function Dashboard() {
             onPrint={() => window.print()} 
           />
         )}
-
-      {showOfficerModal && (
-        <OfficerDirectoryModal officers={officers} onClose={() => setShowOfficerModal(false)} />
-      )}
 
       {reportData && (
         <ReportViewer 
