@@ -16,7 +16,7 @@ type ResourceConfig = {
   singular: string;
   description: string;
   icon: typeof Users;
-  accent: string;
+  accent: 'blue' | 'amber' | 'emerald';
   fields: { label: string; key: 'name' | 'shortName' | 'details'; placeholder: string }[];
 };
 
