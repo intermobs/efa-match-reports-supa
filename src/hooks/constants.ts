@@ -1,3 +1,22 @@
+const NATIONAL_TEAM_COUNTRIES = [
+  'Angola',
+  'Botswana',
+  'Comoros',
+  'Eswatini',
+  'Lesotho',
+  'Madagascar',
+  'Malawi',
+  'Mauritius',
+  'Mozambique',
+  'Namibia',
+  'Seychelles',
+  'South Africa',
+  'Zambia',
+  'Zimbabwe',
+];
+
+const nationalTeamOptions = NATIONAL_TEAM_COUNTRIES.map((country) => ({ value: country, label: country }));
+
 export const TEAMS = [
   {
     label: "MTN Premier League",
@@ -21,7 +40,7 @@ export const TEAMS = [
     ]
   },
   {
-    label: "Mulasport National First Division (NFD)",
+    label: "Mulasport National First Division",
     options: [
       { value: 'All Nations FC', label: 'All Nations FC' },
       { value: 'Nkwene Sundowns FC', label: 'Nkwene Sundowns FC' },
@@ -42,42 +61,91 @@ export const TEAMS = [
     ]
   },
   {
-    label: "Women's Category",
+    label: "Women Football League",
     options: [
       { value: 'Young Buffaloes Ladies FC', label: 'Young Buffaloes Ladies FC' },
       { value: 'Nsingizini Hotspurs Ladies FC', label: 'Nsingizini Hotspurs Ladies FC' },
       { value: 'Manzini Wanderers Ladies FC', label: 'Manzini Wanderers Ladies FC' },
-      { value: 'Mbabane Swallows Ladies FC', label: 'Mbabane Swallows FC' },
+      { value: 'Mbabane Swallows Ladies FC', label: 'Mbabane Swallows Ladies FC' },
       { value: 'Royal Leopards Ladies FC', label: 'Royal Leopards Ladies FC' },
       { value: 'Green Mamba Ladies FC', label: 'Green Mamba Ladies FC' },
-      { value: 'As Interladies FC', label: 'As Interladies FC' },
+      { value: 'AS Interladies FC', label: 'AS Interladies FC' },
       { value: 'Southern Divas FC', label: 'Southern Divas FC' },
       { value: 'Matsapha Roses FC', label: 'Matsapha Roses FC' },
       { value: 'Mbekelweni Ladies FC', label: 'Mbekelweni Ladies FC' },
       { value: 'Sidvwashini United Ladies FC', label: 'Sidvwashini United Ladies FC' },
-      { value: 'Red Rhinos Ladies FC', label: 'Red Rhinos Ladies FC' }
+      { value: 'MT Phoenix Ladies FC', label: 'MT Phoenix Ladies FC' }
     ]
   },
   {
-    label: "National Teams (COSAFA/Regional)",
-    options: [
-      { value: 'Angola', label: 'Angola' },
-      { value: 'Botswana', label: 'Botswana' },
-      { value: 'Comoros', label: 'Comoros' },
-      { value: 'Eswatini', label: 'Eswatini' },
-      { value: 'Lesotho', label: 'Lesotho' },
-      { value: 'Madagascar', label: 'Madagascar' },
-      { value: 'Malawi', label: 'Malawi' },
-      { value: 'Mauritius', label: 'Mauritius' },
-      { value: 'Mozambique', label: 'Mozambique' },
-      { value: 'Namibia', label: 'Namibia' },
-      { value: 'Seychelles', label: 'Seychelles' },
-      { value: 'South Africa', label: 'South Africa' },
-      { value: 'Zambia', label: 'Zambia' },
-      { value: 'Zimbabwe', label: 'Zimbabwe' }
-    ]
-  }
+    label: "National Teams - Senior",
+    options: nationalTeamOptions
+  },
+  { label: "National Teams - U15", options: nationalTeamOptions },
+  { label: "National Teams - U17", options: nationalTeamOptions },
+  { label: "National Teams - U20", options: nationalTeamOptions },
+  { label: "National Teams - U23", options: nationalTeamOptions },
 ];
+
+export const normalizeTeamCategory = (category?: string) => {
+  const aliases: Record<string, string> = {
+    "Mulasport National First Division (NFD)": "Mulasport National First Division",
+    "Women's Category": "Women Football League",
+    "National Teams (COSAFA/Regional)": "National Teams - Senior",
+  };
+  const normalized = category ? aliases[category] || category : TEAMS[0].label;
+  return TEAMS.some((group) => group.label === normalized) ? normalized : TEAMS[0].label;
+};
+
+export const getConfiguredTeams = () => {
+  if (typeof window === 'undefined') return TEAMS;
+
+  try {
+    const stored = window.localStorage.getItem('efa-reference-data');
+    if (!stored) return TEAMS;
+    const settings = JSON.parse(stored) as {
+      teamsManaged?: boolean;
+      teams?: { name: string; shortName?: string; category?: string }[];
+    };
+    const savedTeams = settings.teams;
+    if (!Array.isArray(savedTeams)) return TEAMS;
+
+    const configuredTeams = settings.teamsManaged
+      ? savedTeams.map((team) => ({
+          category: normalizeTeamCategory(team.category),
+          value: team.shortName || team.name,
+          label: team.name,
+        }))
+      : TEAMS.flatMap((group) => group.options.map((team) => {
+          const savedTeam = savedTeams.find((item) =>
+            (item.name === team.label || item.shortName === team.value) &&
+            normalizeTeamCategory(item.category) === group.label
+          );
+          return {
+            category: normalizeTeamCategory(savedTeam?.category || group.label),
+            value: savedTeam?.shortName || team.value,
+            label: savedTeam?.name || team.label,
+          };
+        }));
+    const customTeams = savedTeams
+      .filter(() => !settings.teamsManaged)
+      .filter((team) => !TEAMS.some((group) =>
+        normalizeTeamCategory(team.category) === group.label &&
+        group.options.some((option) => option.label === team.name || option.value === team.shortName)
+      ))
+      .map((team) => ({ category: normalizeTeamCategory(team.category), value: team.shortName || team.name, label: team.name }));
+
+    return TEAMS.map((group) => ({
+      label: group.label,
+      options: [...configuredTeams, ...customTeams]
+        .filter((team) => team.category === group.label)
+        .map(({ value, label }) => ({ value, label })),
+    }));
+  } catch (error) {
+    console.error('Unable to read managed team settings:', error);
+    return TEAMS;
+  }
+};
 
 export const TOURNAMENTS = [
   {
