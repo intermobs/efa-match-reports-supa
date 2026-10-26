@@ -2,7 +2,7 @@
 /* @ts-nocheck */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Plus, X, Trophy, Users, Clock, Calendar, RefreshCcw, ChevronDown } from 'lucide-react';
+import { ShieldAlert, Plus, X, Users, Calendar, RefreshCcw, ChevronDown } from 'lucide-react';
 import { db, getCurrentUser } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import MatchActionsModal from '../components/MatchActionsModal';
@@ -476,9 +476,10 @@ export default function Dashboard() {
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
   }, [totalPages]);
-  //const m1PendingCount = matches.filter((m: any) => m.status === 'M-1 Pending').length;
-  //const activeCount = matches.filter((m: any) => m.status === 'Active').length;
-  //const incompleteTotal = m1PendingCount + activeCount;
+  const comingMatchCount = matches.filter((match: any) => match.status === 'M-1 Pending').length;
+  const activeMatchCount = matches.filter((match: any) => match.status === 'Active').length;
+  const completedMatchCount = matches.filter((match: any) => match.status === 'Completed').length;
+  const incidentCount = matches.filter((match: any) => match.hasIncident === true).length;
   return (
     <div className="w-screen min-h-screen bg-gray-50! flex flex-col">
       <DashboardHeader
@@ -497,12 +498,26 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto">
         
         {isAdmin && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5 mb-12">
-            <StatCard title="Coming Matches" subtitle="Awaiting Matchday-1 Form" value={matches.filter((m: any) => m.status === 'M-1 Pending').length} icon={<Clock className="text-orange-300" />} />
-            <StatCard title="Active Matches" subtitle="In progress, Waiting for Matchday Form" value={matches.filter((m: any) => m.status === 'Active').length} icon={<ShieldAlert className="text-green-600" />} />
-            <StatCard title="Total Matches" subtitle="Scheduled & completed" value={matches.length} icon={<Trophy className="text-blue-600" />} />
-            <StatCard title="Active Officers" subtitle="Click to manage officers" value={officers.length} icon={<Users className="text-black" />} onClick={() => navigate('/settings#officers')} />
-            <StatCard title="Reported Incidents" subtitle="Incidents logged" value={matches.filter((m: any) => m.hasIncident === true).length} icon={<ShieldAlert className="text-red-600" />} />
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <StatCard
+              title="Total matches"
+              detail={`${comingMatchCount} coming · ${activeMatchCount} active · ${completedMatchCount} completed`}
+              value={matches.length}
+              icon={<Calendar size={20} />}
+            />
+            <StatCard
+              title="Active officers"
+              detail="Manage officer accounts"
+              value={officers.length}
+              icon={<Users size={20} />}
+              onClick={() => navigate('/settings#officers')}
+            />
+            <StatCard
+              title="Reported incidents"
+              detail="Across all matches"
+              value={incidentCount}
+              icon={<ShieldAlert size={20} />}
+            />
           </div>
         )}
         
