@@ -1,9 +1,10 @@
 /* eslint-disable */
 /* @ts-nocheck */
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import Select from 'react-select';
 import { db } from '../lib/supabase';
-import { TOURNAMENTS, LEAGUES, TEAMS, VENUES, STADIUMS } from '../hooks/constants';
+import { TOURNAMENTS, LEAGUES, getConfiguredTeams, VENUES, STADIUMS } from '../hooks/constants';
 
 const selectStyles = {
   control: (base: any) => ({ ...base, padding: '2px', borderColor: '#d1d5db', minHeight: '38px' }),
@@ -14,8 +15,9 @@ const selectStyles = {
 
 export function AddMatchForm({ onAdd, officers }: { onAdd: () => void; officers: any[] }) {
   const [data, setData] = useState({ homeTeam: '', awayTeam: '', date: '', stadium: '', tournament: '', league: '', venue: '', assignedUserId: '', assignedOfficerName: '' });
+  const teams = getConfiguredTeams();
 
-  const teamOptionsFor = (excludedTeam: string) => TEAMS.map((group: any) => ({
+  const teamOptionsFor = (excludedTeam: string) => teams.map((group: any) => ({
     ...group,
     options: group.options.filter((team: any) => team.value !== excludedTeam),
   })).filter((group: any) => group.options.length > 0);
@@ -65,24 +67,32 @@ export function AddMatchForm({ onAdd, officers }: { onAdd: () => void; officers:
   );
 }
 
-export function StatCard({ title, subtitle, subtitle2, value, icon, onClick }: any) {
-  const clickable = Boolean(onClick);
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full text-left bg-white p-6 rounded-3xl shadow-sm border border-gray-100 transition-all duration-200 ${clickable ? 'hover:shadow-xl hover:border-gray-200 cursor-pointer transform hover:-translate-y-0.5' : ''}`}>
-      <div className="flex items-start justify-between gap-4">
+type StatCardProps = {
+  title: string;
+  detail: string;
+  value: number;
+  icon: ReactNode;
+  onClick?: () => void;
+};
+
+export function StatCard({ title, detail, value, icon, onClick }: StatCardProps) {
+  const content = (
+    <>
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-600">{title}</p>
-          {subtitle && <p className="mt-2 text-xs text-slate-500">{subtitle}</p>}
-          {subtitle2 && <p className="mt-2 text-xs text-slate-500">{subtitle2}</p>}
+          <p className="text-sm font-medium text-slate-500">{title}</p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{value}</p>
         </div>
-        <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">{icon}</div>
+        <div className="rounded-xl bg-slate-50 p-2.5 text-slate-500">{icon}</div>
       </div>
-      <div className="mt-6">
-        <p className="text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
-      </div>
-    </button>
+      <p className="mt-2 truncate text-xs text-slate-500">{detail}</p>
+    </>
   );
+  const className = `w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm ${
+    onClick ? 'transition hover:border-blue-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500' : ''
+  }`;
+
+  return onClick
+    ? <button type="button" onClick={onClick} className={className}>{content}</button>
+    : <div className={className}>{content}</div>;
 }
