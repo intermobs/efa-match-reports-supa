@@ -113,7 +113,7 @@ export default function DashboardHeader({
              <img src="/efa_logo.png" className="w-12 h-12" />
             </div>
             <div className="hidden sm:block">               
-              <h1 className="text-2xl font-bold text-blue-900">Command Center</h1>
+              <h1 className="text-2xl font-bold text-blue-900">Reports Center</h1>
             </div>
             <div className="sm:hidden">
               <h1 className="text-lg font-bold text-blue-900">EFA</h1>
